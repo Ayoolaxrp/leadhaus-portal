@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { FileText } from "@phosphor-icons/react/dist/ssr";
 import { requireClient } from "@/lib/session";
-import { getDocuments, requireSection } from "@/lib/portal";
+import { getDocuments } from "@/lib/portal";
+import { requireSection } from "@/lib/portal-guard";
 import { PageHeader, Card, Badge, Empty } from "@/components/ui";
 import { date } from "@/lib/format";
 

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireClient } from "@/lib/session";
-import { getInvoice, getAccount, getAgencyInfo, requireSection } from "@/lib/portal";
+import { getInvoice, getAccount, getAgencyInfo } from "@/lib/portal";
+import { requireSection } from "@/lib/portal-guard";
 import { markInvoiceSent } from "@/lib/actions";
 import { Card, Status, Badge, btn } from "@/components/ui";
 import { ActionForm } from "@/components/action-form";

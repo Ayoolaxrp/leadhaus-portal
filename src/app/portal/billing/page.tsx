@@ -1,5 +1,6 @@
 import { requireClient } from "@/lib/session";
-import { getInvoices, requireSection } from "@/lib/portal";
+import { getInvoices } from "@/lib/portal";
+import { requireSection } from "@/lib/portal-guard";
 import Link from "next/link";
 import { PageHeader, Card, Stat, Status, Empty, Badge, btn } from "@/components/ui";
 import { date, money } from "@/lib/format";

@@ -1,5 +1,6 @@
 import { requireClient } from "@/lib/session";
-import { getStrategy, requireSection } from "@/lib/portal";
+import { getStrategy } from "@/lib/portal";
+import { requireSection } from "@/lib/portal-guard";
 import { PageHeader, Card, Empty, Badge } from "@/components/ui";
 import { date, money, ratio } from "@/lib/format";
 import { PrintButton } from "@/components/print-button";

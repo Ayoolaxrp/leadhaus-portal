@@ -1,5 +1,6 @@
 import { requireClient } from "@/lib/session";
-import { getProjects, getCampaigns, requireSection } from "@/lib/portal";
+import { getProjects, getCampaigns } from "@/lib/portal";
+import { requireSection } from "@/lib/portal-guard";
 import { PageHeader, Card, Progress, Status, Empty } from "@/components/ui";
 import { date, money } from "@/lib/format";
 

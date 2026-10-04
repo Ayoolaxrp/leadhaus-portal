@@ -7,6 +7,25 @@ One Next.js 16 app with two role-aware surfaces:
 
 What the team controls: agency contact and bank details, an announcement to all clients, and per client: which portal pages they can open, account lead, a dashboard note, project progress and deliverables, campaign status, goals and KPIs, and onboarding items.
 
+## What the team controls, and where the client sees it
+
+Every client page has a matching team control. Most live under **Clients > Manage portal**, in tabs named after the client pages.
+
+| Client page | Team control | Where |
+|---|---|---|
+| Account and menu | Add a client (gives portal access), client status, account lead, which pages they can open, dashboard note | Clients > Add a client; Manage portal > Overview |
+| Onboarding | Start onboarding (service checklist + welcome + to-do), stage (Not Started to Complete), reminders, tick items, ask for anything | Manage portal > Onboarding |
+| Dashboard | Weekly numbers (spend, leads, revenue), announcement to all clients, tasks, dashboard note | Manage portal > Reports and numbers; Settings; Delivery |
+| Projects | Start projects, progress, deliverables, add campaigns, campaign status | Manage portal > Projects |
+| Creative approval | Add creatives, send for review, reply to comments, upload new versions | Manage portal > Creatives; Delivery |
+| Strategy | Summary, recommendations, campaign plan, goals and targets | Manage portal > Strategy |
+| Reports | Write, draft, publish reports | Manage portal > Reports and numbers; Delivery |
+| Documents | Share documents, hide or show them | Manage portal > Documents |
+| Messages | Chat, announcements, internal notes | Inbox |
+| Billing | Create invoices, confirm payments, bank details | Finance; Settings |
+
+Onboarding follows the build spec: checklists per service (Ads Management, Influencer Campaign, Creative Production, Strategy and Audit) in `src/lib/data/templates.ts`, and stages Not Started, In Progress, Ready for Strategy, Ready for Launch, Complete. Completing onboarding marks the client Active and sends a thank-you announcement.
+
 ## Run
 
 ```bash
@@ -19,7 +38,7 @@ npm run build
 
 Demo mode keeps data in memory (`src/lib/data/store.ts`) and resets on server restart or when someone clicks **Reset demo** on the sign in page. Copy `.env.example`: `SESSION_SECRET` is required in production, `DEMO_PASSCODE` adds an access code to the sign in page.
 
-Non-technical testers: give them `TESTING_GUIDE.md` (60 tick-box steps, plain English).
+Non-technical testers: give them `TESTING_GUIDE.md` (67 tick-box steps, plain English).
 
 ## Privacy boundary (the important part)
 

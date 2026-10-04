@@ -1,9 +1,11 @@
 import { CheckCircle, Circle } from "@phosphor-icons/react/dist/ssr";
 import { requireClient } from "@/lib/session";
-import { getOnboarding, requireSection } from "@/lib/portal";
+import { getOnboarding, getAccount } from "@/lib/portal";
+import { requireSection } from "@/lib/portal-guard";
 import { completeOnboardingItem, uploadAssets } from "@/lib/actions";
 import { PageHeader, Card, Progress, btn, field } from "@/components/ui";
 import { ActionForm } from "@/components/action-form";
+import { StageTracker } from "@/components/stage-tracker";
 import { date, dateTime, fileSize } from "@/lib/format";
 
 export const metadata = { title: "Onboarding" };
@@ -18,17 +20,22 @@ export default async function Onboarding() {
   const me = await requireClient();
   requireSection(me.clientId, "onboarding");
   const { items, uploads, pct } = getOnboarding(me.clientId);
+  const stage = getAccount(me.clientId).onboardingStage;
   const open = items.filter((i) => !i.done);
 
   return (
     <>
       <PageHeader title="Onboarding" sub="Everything we need from you to run your campaigns well."
         help={["A green tick means that item is done. An empty circle means we still need it.", "For questions, type your answer and click Send.", "For account access, give Leadhaus access in that tool first, then click I have granted access.", "To send photos, videos or files, click Choose files, pick them from your computer, then click Upload."]} />
+      <Card className="mb-4">
+        <p className="mb-3 text-xs font-medium text-muted">Where you are</p>
+        <StageTracker stage={stage} />
+      </Card>
       <Card className="mb-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold tracking-tight">{pct === 100 ? "Setup complete" : `${open.length} item${open.length === 1 ? "" : "s"} left`}</h2>
-            <p className="text-sm text-muted">{pct === 100 ? "Thank you. Everything is in place." : "Each one unblocks part of your campaign."}</p>
+            <h2 className="text-lg font-semibold tracking-tight">{!items.length ? "Your checklist is on its way" : pct === 100 ? "Setup complete" : `${open.length} item${open.length === 1 ? "" : "s"} left`}</h2>
+            <p className="text-sm text-muted">{!items.length ? "Your account lead will send what we need from you shortly." : pct === 100 ? "Thank you. Everything is in place." : "Each one unblocks part of your campaign."}</p>
           </div>
           <div className="sm:w-72"><Progress value={pct} label="Complete" /></div>
         </div>

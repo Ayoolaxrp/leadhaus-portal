@@ -1,5 +1,6 @@
 import { requireClient } from "@/lib/session";
-import { getReports, getPerformance, requireSection } from "@/lib/portal";
+import { getReports, getPerformance } from "@/lib/portal";
+import { requireSection } from "@/lib/portal-guard";
 import { PageHeader, Card, SectionTitle, Badge, Empty } from "@/components/ui";
 import { WeeklyBars } from "@/components/chart";
 import { PrintButton } from "@/components/print-button";

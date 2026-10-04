@@ -1,6 +1,7 @@
 import { Megaphone } from "@phosphor-icons/react/dist/ssr";
 import { requireClient } from "@/lib/session";
-import { getMessages, getAccount, getAgencyInfo, requireSection } from "@/lib/portal";
+import { getMessages, getAccount, getAgencyInfo } from "@/lib/portal";
+import { requireSection } from "@/lib/portal-guard";
 import { sendClientMessage } from "@/lib/actions";
 import { PageHeader, Card, btn, field } from "@/components/ui";
 import { ActionForm } from "@/components/action-form";

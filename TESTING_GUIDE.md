@@ -119,6 +119,18 @@ Ada runs marketing at Northstar Wellness, a Leadhaus client.
 59. [ ] Sign in as **Ada Nwosu**. Check: the pink announcement and the dashboard note are on her home page; *TikTok access* is in her jobs; Strategy is gone from her menu; Projects shows the new progress and deliverable; the invoice shows the new bank details.
 60. [ ] As Ada, send a question on **Messages**. Sign in as **Oma**, open **Inbox**, pick Northstar, reply and click **Send**. The *Needs reply* label disappears. Sign back in as Ada: the reply is in her chat.
 
+---
+
+## Part 5: A brand-new client, from day one
+
+61. [ ] Sign in as **Dare**, open **Clients**, click **Add a client**. Fill in a business name, the person who signs in, their email and a service. Keep **Start onboarding now** ticked. Click **Add client**.
+62. [ ] Sign out. The new person now appears on the sign in page under Client accounts. Sign in as them.
+63. [ ] Their dashboard shows **Getting started** with a progress line, and a job: *Complete your onboarding checklist*. Messages has a welcome announcement naming their account lead.
+64. [ ] Their Onboarding page lists the checklist for their service.
+65. [ ] Sign in as **Dare** again. Clients > **Manage portal** on the new client > **Onboarding** tab. Click **Send a reminder**. Then move the stage to **Complete** and click **Save stage**.
+66. [ ] Sign in as the new client. *Getting started* is gone, and Messages shows the reminder and an *Onboarding is complete* announcement.
+67. [ ] As Dare, use the other tabs: start a project, add a campaign, add a creative, log a week of numbers, write and publish a report, edit the strategy, share a document. After each one, sign in as the client and check it appears on the matching page.
+
 **Finish:** click **Reset demo** on the sign in page so the next tester starts fresh.
 
 ---

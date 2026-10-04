@@ -10,3 +10,7 @@
 - Tasks used to close by fuzzy title match ("October offer" closed the wrong task). Tasks now carry `relatesTo` with the creative/onboarding id.
 - `next build` failed type check from stale `.next/dev` types while a dev server was running. Stop dev servers and `rm -rf .next` before building.
 - In-memory demo data is not safe on serverless: deploy the demo as a single long-running server, or connect Supabase.
+
+## 2026-10-04 Admin and client correspondence
+- Importing next/navigation into portal.ts broke the plain node test runner (React createContext). Keep portal.ts pure data; page-level guards live in portal-guard.ts.
+- Playwright: after clicking a tab link, wait for something on the new tab before filling fields, or labels from the previous tab get matched.

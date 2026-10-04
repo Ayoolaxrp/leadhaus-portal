@@ -4,6 +4,7 @@ import { Megaphone, ChatCircleText } from "@phosphor-icons/react/dist/ssr";
 import { getAccount, getCampaigns, getPerformance, getTasks, getMessages, getCreatives, getAgencyInfo } from "@/lib/portal";
 import { PageHeader, Card, SectionTitle, Stat, Status, Row, Empty, btn } from "@/components/ui";
 import { WeeklyBars } from "@/components/chart";
+import { StageTracker } from "@/components/stage-tracker";
 import { money, moneyShort, ratio, change, date, greeting } from "@/lib/format";
 
 export const metadata = { title: "Dashboard" };
@@ -45,6 +46,18 @@ export default async function Dashboard() {
           <p>{agency.announcement}</p>
         </div>
       )}
+      {account.onboardingStage !== "Complete" && account.onboardingStage !== "Not Started" && on.onboarding && (
+        <Card className="mb-6">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="text-[15px] font-semibold">Getting started</h2>
+              <p className="text-sm text-muted">We are setting up your account. Finish your onboarding so we can launch.</p>
+            </div>
+            <Link href="/portal/onboarding" className={btn.secondary}>Open onboarding</Link>
+          </div>
+          <StageTracker stage={account.onboardingStage} />
+        </Card>
+      )}
       {account.welcomeNote && (
         <Card className="mb-6">
           <p className="text-xs text-muted">A note from {account.accountLead}</p>
@@ -76,7 +89,7 @@ export default async function Dashboard() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Leads, last 4 weeks" value={String(cur.leads)} {...delta(cur.leads, prev.leads)} />
         <Stat label="Cost per lead" value={money(Math.round(cur.cpl))} {...delta(cur.cpl, prev.cpl, true)} />
-        <Stat label="Ad spend" value={moneyShort(cur.spend)} note={`${Math.round((cur.spend / perf.budget) * 100)}% of monthly budget`} />
+        <Stat label="Ad spend" value={moneyShort(cur.spend)} note={perf.budget ? `${Math.round((cur.spend / perf.budget) * 100)}% of monthly budget` : "No campaign budget set yet"} />
         <Stat label="Return on ad spend" value={ratio(cur.roas)} {...delta(cur.roas, prev.roas)} />
       </div>
 

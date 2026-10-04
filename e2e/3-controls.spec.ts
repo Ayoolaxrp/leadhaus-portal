@@ -19,6 +19,11 @@ const manageNorthstar = async (page: Page) => {
   await expect(page.getByRole("heading", { level: 1, name: "Manage Northstar Wellness" })).toBeVisible();
 };
 
+const openTab = async (page: Page, name: string) => {
+  await page.getByRole("navigation", { name: "Client sections" }).getByRole("link", { name }).click();
+  await expect(page.getByRole("navigation", { name: "Client sections" }).getByRole("link", { name })).toHaveAttribute("aria-current", "page");
+};
+
 test("settings: validation, announcement and bank details reach the client", async ({ page }) => {
   await signInAs(page, "Dare");
   await openPage(page, /^Settings/, "Settings");
@@ -40,6 +45,7 @@ test("settings: validation, announcement and bank details reach the client", asy
 
 test("goals: team updates numbers, client sees them", async ({ page }) => {
   await manageNorthstar(page);
+  await openTab(page, "Strategy");
   const goal = page.getByRole("group", { name: "Booked consultations" });
   await goal.getByLabel("Now").fill("72");
   await page.getByRole("button", { name: "Save goals" }).click();
@@ -53,6 +59,7 @@ test("goals: team updates numbers, client sees them", async ({ page }) => {
 
 test("project progress, deliverables and campaign status", async ({ page }) => {
   await manageNorthstar(page);
+  await openTab(page, "Projects");
   const project = page.locator("section").filter({ hasText: "New patient acquisition" }).filter({ has: page.getByRole("button", { name: "Save project" }) });
   // The browser refuses numbers above 100 before anything is sent.
   await project.getByLabel("New progress, 0 to 100").fill("140");
@@ -78,6 +85,7 @@ test("project progress, deliverables and campaign status", async ({ page }) => {
 
 test("onboarding: team asks for something and ticks items", async ({ page }) => {
   await manageNorthstar(page);
+  await openTab(page, "Onboarding");
   await page.locator("summary", { hasText: "Ask the client for something" }).click();
   await page.getByLabel("What you need").fill("TikTok Business Center access");
   await page.getByLabel("Type").selectOption("access");

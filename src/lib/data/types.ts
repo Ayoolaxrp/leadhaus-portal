@@ -7,6 +7,12 @@ export type Role = "client" | "admin";
 export const PORTAL_SECTIONS = ["projects", "creative", "strategy", "reports", "onboarding", "documents", "messages", "billing"] as const;
 export type PortalSection = (typeof PORTAL_SECTIONS)[number];
 
+// Onboarding stages from the Leadhaus OS build spec, section 5.
+export const ONBOARDING_STAGES = ["Not Started", "In Progress", "Ready for Strategy", "Ready for Launch", "Complete"] as const;
+export type OnboardingStage = (typeof ONBOARDING_STAGES)[number];
+
+export const SERVICES = ["Ads Management", "Influencer Campaign", "Creative Production", "Strategy and Audit"] as const;
+
 // Agency-wide settings. Everything here is shown to clients somewhere.
 export type AgencySettings = {
   agencyName: string;
@@ -39,6 +45,7 @@ export type Client = {
   // portal settings the team controls
   sections: Record<PortalSection, boolean>;
   welcomeNote: string;
+  onboardingStage: OnboardingStage;
   // internal only
   health: "Healthy" | "Attention" | "At Risk";
   marginPct: number;

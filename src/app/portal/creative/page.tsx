@@ -1,5 +1,6 @@
 import { requireClient } from "@/lib/session";
-import { getCreatives, requireSection } from "@/lib/portal";
+import { getCreatives } from "@/lib/portal";
+import { requireSection } from "@/lib/portal-guard";
 import { PageHeader, Empty } from "@/components/ui";
 import { CreativeCard } from "./creative-card";
 

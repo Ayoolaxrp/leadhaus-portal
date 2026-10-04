@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireClient } from "@/lib/session";
-import { getDocument, getAccount, requireSection } from "@/lib/portal";
+import { getDocument, getAccount } from "@/lib/portal";
+import { requireSection } from "@/lib/portal-guard";
 import { Card, Badge } from "@/components/ui";
 import { PrintButton } from "@/components/print-button";
 import { date } from "@/lib/format";

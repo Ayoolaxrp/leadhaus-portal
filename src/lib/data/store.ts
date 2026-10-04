@@ -36,8 +36,8 @@ function seed() {
   };
 
   const clients: T.Client[] = [
-    { id: "c_northstar", name: "Northstar Wellness", service: "Ads Management", status: "Active", accountLead: "Oma", contactName: "Ada Nwosu", currency: "NGN", monthlyFee: 350000, renewalDate: "2026-11-30", sections: { ...allOn }, welcomeNote: "", health: "Healthy", marginPct: 41, internalNotes: "Upsell creative retainer at Q4 review. Ada is price sensitive." },
-    { id: "c_fika", name: "Fika Foods", service: "Influencer Campaign", status: "Active", accountLead: "Fareedah", contactName: "Zainab Bello", currency: "NGN", monthlyFee: 280000, renewalDate: "2026-12-15", sections: { ...allOn, strategy: false }, welcomeNote: "", health: "Attention", marginPct: 23, internalNotes: "Creator fees eating margin. Renegotiate scope before renewal." },
+    { id: "c_northstar", name: "Northstar Wellness", service: "Ads Management", status: "Active", accountLead: "Oma", contactName: "Ada Nwosu", currency: "NGN", monthlyFee: 350000, renewalDate: "2026-11-30", sections: { ...allOn }, welcomeNote: "", onboardingStage: "Ready for Launch", health: "Healthy", marginPct: 41, internalNotes: "Upsell creative retainer at Q4 review. Ada is price sensitive." },
+    { id: "c_fika", name: "Fika Foods", service: "Influencer Campaign", status: "Active", accountLead: "Fareedah", contactName: "Zainab Bello", currency: "NGN", monthlyFee: 280000, renewalDate: "2026-12-15", sections: { ...allOn, strategy: false }, welcomeNote: "", onboardingStage: "Complete", health: "Attention", marginPct: 23, internalNotes: "Creator fees eating margin. Renegotiate scope before renewal." },
   ];
 
   const campaigns: T.Campaign[] = [

@@ -5,7 +5,9 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { db, logEvent, resetStore } from "./data/store";
 import { SESSION_COOKIE, sign, requireClient, requireAdmin } from "./session";
-import type { Lead, Message } from "./data/types";
+import type { Lead, Message, OnboardingStage, PortalSection } from "./data/types";
+import { ONBOARDING_STAGES, PORTAL_SECTIONS, SERVICES } from "./data/types";
+import { onboardingTemplate } from "./data/templates";
 
 // Every action re-resolves the session and checks the record's client_id
 // against it. Client writes are limited to: comments, approve/revise,
@@ -394,5 +396,295 @@ export async function markQuestionsAnswered(formData: FormData) {
   const clientId = text(formData.get("clientId"), 64);
   db.messages.filter((m) => m.clientId === clientId && m.kind === "Question").forEach((m) => (m.answered = true));
   logEvent(me.name, "Marked questions as handled", clientId);
+  refreshAll();
+}
+
+// ---- client lifecycle and content the team publishes to the portal ----
+
+const isDate = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s);
+const num = (v: FormDataEntryValue | null) => Number(text(v, 20).replace(/[^\d.]/g, ""));
+const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40);
+const announce = (clientId: string, from: string, body: string, kind: Message["kind"] = "Announcement") =>
+  db.messages.push({ id: crypto.randomUUID(), clientId, kind, from, fromRole: "admin", body, at: new Date().toISOString(), visibility: "client" });
+
+function applyTemplate(clientId: string, service: string) {
+  const have = new Set(db.onboarding.filter((o) => o.clientId === clientId).map((o) => o.label.toLowerCase()));
+  const added = onboardingTemplate(service).filter((t) => !have.has(t.label.toLowerCase()));
+  for (const t of added) db.onboarding.push({ id: crypto.randomUUID(), clientId, ...t, done: false });
+  return added.length;
+}
+
+function ensureChecklistTask(clientId: string) {
+  if (db.tasks.some((t) => t.clientId === clientId && t.relatesTo === "onboarding" && t.status !== "Done")) return;
+  const contact = db.users.find((u) => u.clientId === clientId);
+  const due = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
+  db.tasks.push({ id: crypto.randomUUID(), clientId, title: "Complete your onboarding checklist", owner: contact?.name ?? "Client", assignee: "client", due, status: "Open", clientVisible: true, link: "/portal/onboarding", relatesTo: "onboarding" });
+}
+
+function beginOnboarding(clientId: string, actor: string) {
+  const c = ownClient(clientId);
+  const added = applyTemplate(clientId, c.service);
+  c.onboardingStage = "In Progress";
+  if (c.status !== "Active") c.status = "Onboarding";
+  c.sections.onboarding = true;
+  ensureChecklistTask(clientId);
+  announce(clientId, actor, `Welcome to ${db.settings.agencyName}. Your onboarding has started: open the Onboarding page to see what we need from you. ${c.accountLead} is your account lead.`);
+  return added;
+}
+
+export async function createClient(formData: FormData): Promise<Result> {
+  const me = await requireAdmin();
+  const name = text(formData.get("name"), 100);
+  const contactName = text(formData.get("contactName"), 100);
+  const email = text(formData.get("email"), 120).toLowerCase();
+  const service = text(formData.get("service"), 40);
+  if (!name) return { error: "Add the business name." };
+  if (!contactName) return { error: "Add the name of the person who will sign in." };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "Enter a valid email for the person who will sign in." };
+  if (!(SERVICES as readonly string[]).includes(service)) return { error: "Pick a service." };
+  if (db.clients.some((c) => c.name.toLowerCase() === name.toLowerCase())) return { error: "A client with that name already exists." };
+  if (db.users.some((u) => u.email === email)) return { error: "That email already has portal access." };
+  const leadName = text(formData.get("accountLead"), 40);
+  const lead = db.users.some((u) => u.role === "admin" && u.name === leadName) ? leadName : me.name;
+  const id = `c_${slug(name)}_${crypto.randomUUID().slice(0, 4)}`;
+  const renewal = new Date(Date.now() + 90 * 864e5).toISOString().slice(0, 10);
+  db.clients.push({
+    id, name, service, status: "Onboarding", accountLead: lead, contactName, currency: "NGN", monthlyFee: num(formData.get("monthlyFee")) || 0, renewalDate: renewal,
+    sections: Object.fromEntries(PORTAL_SECTIONS.map((s) => [s, true])) as Record<PortalSection, boolean>, welcomeNote: "", onboardingStage: "Not Started",
+    health: "Healthy", marginPct: 0, internalNotes: "",
+  });
+  db.users.push({ id: `u_${crypto.randomUUID().slice(0, 8)}`, name: contactName, email, role: "client", clientId: id, title: text(formData.get("title"), 60) || "Client" });
+  db.strategies.push({ clientId: id, title: "Growth strategy", updated: today(), summary: "We are preparing your strategy. It will appear here after kickoff.", recommendations: [], plans: [], goals: [], internalDiscussion: "" });
+  db.tasks.push({ id: crypto.randomUUID(), clientId: id, title: `Book kickoff call with ${name}`, owner: lead, assignee: "agency", due: today(), status: "Open", clientVisible: false });
+  if (formData.get("startOnboarding") === "on") beginOnboarding(id, me.name);
+  logEvent(me.name, `Added client ${name}`, id);
+  refreshAll();
+  return { ok: true };
+}
+
+export async function startOnboarding(formData: FormData): Promise<Result> {
+  const me = await requireAdmin();
+  const c = ownClient(text(formData.get("clientId"), 64));
+  const added = beginOnboarding(c.id, me.name);
+  logEvent(me.name, `Started onboarding (${added} checklist items)`, c.id);
+  refreshAll();
+  return { ok: true };
+}
+
+export async function setOnboardingStage(formData: FormData): Promise<Result> {
+  const me = await requireAdmin();
+  const c = ownClient(text(formData.get("clientId"), 64));
+  const stage = text(formData.get("stage"), 30);
+  if (!(ONBOARDING_STAGES as readonly string[]).includes(stage)) return { error: "Pick a stage." };
+  c.onboardingStage = stage as OnboardingStage;
+  if (stage === "Complete") {
+    c.status = "Active";
+    db.tasks.filter((t) => t.clientId === c.id && t.relatesTo === "onboarding").forEach((t) => (t.status = "Done"));
+    announce(c.id, me.name, "Onboarding is complete. Thank you. Your campaigns are moving to launch and you will see progress on your dashboard.");
+  } else if (stage === "Ready for Launch") {
+    announce(c.id, me.name, "We have everything we need and are preparing to launch. You will be asked to approve the first creatives soon.", "Update");
+  }
+  logEvent(me.name, `Onboarding stage: ${stage}`, c.id);
+  refreshAll();
+  return { ok: true };
+}
+
+export async function sendOnboardingReminder(formData: FormData): Promise<Result> {
+  const me = await requireAdmin();
+  const c = ownClient(text(formData.get("clientId"), 64));
+  const open = db.onboarding.filter((o) => o.clientId === c.id && !o.done);
+  if (!open.length) return { error: "Nothing is outstanding, so there is nothing to remind them about." };
+  announce(c.id, me.name, `A friendly reminder: we still need ${open.length} item${open.length === 1 ? "" : "s"} to keep your campaign on track:\n${open.map((o) => `- ${o.label}`).join("\n")}\nYou can complete them on your Onboarding page.`, "Update");
+  ensureChecklistTask(c.id);
+  logEvent(me.name, "Sent onboarding reminder", c.id);
+  refreshAll();
+  return { ok: true };
+}
+
+export async function applyChecklistTemplate(formData: FormData): Promise<Result> {
+  const me = await requireAdmin();
+  const c = ownClient(text(formData.get("clientId"), 64));
+  const added = applyTemplate(c.id, c.service);
+  if (!added) return { error: "Every item from the checklist is already on their list." };
+  logEvent(me.name, `Added ${added} checklist items`, c.id);
+  refreshAll();
+  return { ok: true };
+}
+
+const CLIENT_STATUSES = ["Onboarding", "Active", "Paused", "Completed", "Churned"] as const;
+
+export async function setClientStatus(formData: FormData): Promise<Result> {
+  const me = await requireAdmin();
+  const c = ownClient(text(formData.get("clientId"), 64));
+  const status = text(formData.get("status"), 20);
+  if (!(CLIENT_STATUSES as readonly string[]).includes(status)) return { error: "Pick a status." };
+  c.status = status as (typeof CLIENT_STATUSES)[number];
+  logEvent(me.name, `Client status: ${status}`, c.id);
+  refreshAll();
+  return { ok: true };
+}
+
+export async function addProject(formData: FormData): Promise<Result> {
+  const me = await requireAdmin();
+  const c = ownClient(text(formData.get("clientId"), 64));
+  const name = text(formData.get("name"), 120);
+  const end = text(formData.get("end"), 10);
+  if (!name) return { error: "Name the project." };
+  if (!isDate(end)) return { error: "Pick an end date." };
+  db.projects.push({ id: crypto.randomUUID(), clientId: c.id, name, type: text(formData.get("type"), 40) || c.service, start: today(), end, progress: 0, deliverables: [], owner: me.name, capacityNote: "" });
+  logEvent(me.name, `Started project ${name}`, c.id);
+  refreshAll();
+  return { ok: true };
+}
+
+export async function addCampaign(formData: FormData): Promise<Result> {
+  const me = await requireAdmin();
+  const c = ownClient(text(formData.get("clientId"), 64));
+  const name = text(formData.get("name"), 120);
+  const start = text(formData.get("start"), 10);
+  const end = text(formData.get("end"), 10);
+  if (!name) return { error: "Name the campaign." };
+  if (!isDate(start) || !isDate(end)) return { error: "Pick a start and end date." };
+  if (end < start) return { error: "The end date must be after the start date." };
+  db.campaigns.push({ id: crypto.randomUUID(), clientId: c.id, name, platform: text(formData.get("platform"), 40) || "Meta", objective: text(formData.get("objective"), 40) || "Leads", status: "Planning", start, end, monthlyBudget: num(formData.get("budget")) || 0, internalNotes: "" });
+  logEvent(me.name, `Added campaign ${name}`, c.id);
+  refreshAll();
+  return { ok: true };
+}
+
+function reviewTask(clientId: string, creativeId: string, title: string) {
+  if (db.tasks.some((t) => t.relatesTo === creativeId && t.status !== "Done")) return;
+  const contact = db.users.find((u) => u.clientId === clientId);
+  db.tasks.push({ id: crypto.randomUUID(), clientId, title: `Review ${title}`, owner: contact?.name ?? "Client", assignee: "client", due: today(), status: "Open", clientVisible: true, link: "/portal/creative", relatesTo: creativeId });
+}
+
+export async function addCreative(formData: FormData): Promise<Result> {
+  const me = await requireAdmin();
+  const c = ownClient(text(formData.get("clientId"), 64));
+  const title = text(formData.get("title"), 120);
+  if (!title) return { error: "Name the creative." };
+  const id = crypto.randomUUID();
+  const send = formData.get("sendNow") === "on";
+  db.creatives.push({
+    id, clientId: c.id, title, format: text(formData.get("format"), 40) || "Static 1:1", platform: text(formData.get("platform"), 60) || "Meta feed",
+    status: send ? "Client review" : "Internal review", designer: me.name, productionCost: 0,
+    // Demo: sample picture. With file storage this becomes the uploaded file.
+    versions: [{ version: 1, image: `https://picsum.photos/seed/${slug(title)}-${id.slice(0, 4)}/960/1200`, createdAt: today() }], comments: [],
+  });
+  if (send) reviewTask(c.id, id, title);
+  logEvent(me.name, `Added creative ${title}${send ? " for client review" : ""}`, c.id);
+  refreshAll();
+  return { ok: true };
+}
+
+export async function addCreativeVersion(formData: FormData): Promise<Result> {
+  const me = await requireAdmin();
+  const cr = db.creatives.find((x) => x.id === text(formData.get("creativeId"), 64));
+  if (!cr) return { error: "Creative not found." };
+  const v = cr.versions.length + 1;
+  cr.versions.push({ version: v, image: `https://picsum.photos/seed/${slug(cr.title)}-v${v}/960/1200`, createdAt: today() });
+  const note = text(formData.get("note"));
+  if (note) cr.comments.push({ id: crypto.randomUUID(), author: me.name, authorRole: "admin", body: note, at: new Date().toISOString(), internal: false });
+  cr.status = "Client review";
+  cr.decidedBy = undefined;
+  cr.decidedAt = undefined;
+  reviewTask(cr.clientId, cr.id, cr.title);
+  logEvent(me.name, `Uploaded version ${v} of ${cr.title}`, cr.clientId);
+  refreshAll();
+  return { ok: true };
+}
+
+export async function replyOnCreative(formData: FormData): Promise<Result> {
+  const me = await requireAdmin();
+  const cr = db.creatives.find((x) => x.id === text(formData.get("creativeId"), 64));
+  const body = text(formData.get("body"));
+  if (!cr) return { error: "Creative not found." };
+  if (!body) return { error: "Type your comment first." };
+  cr.comments.push({ id: crypto.randomUUID(), author: me.name, authorRole: "admin", body, at: new Date().toISOString(), internal: formData.get("internal") === "on" });
+  logEvent(me.name, `Commented on ${cr.title}`, cr.clientId);
+  refreshAll();
+  return { ok: true };
+}
+
+export async function createReport(formData: FormData): Promise<Result> {
+  const me = await requireAdmin();
+  const c = ownClient(text(formData.get("clientId"), 64));
+  const title = text(formData.get("title"), 120);
+  const start = text(formData.get("periodStart"), 10);
+  const end = text(formData.get("periodEnd"), 10);
+  const summary = text(formData.get("summary"), 1500);
+  if (!title) return { error: "Give the report a title." };
+  if (!isDate(start) || !isDate(end) || end < start) return { error: "Pick the dates the report covers." };
+  if (!summary) return { error: "Write a short summary of the results." };
+  const highlights = text(formData.get("highlights"), 1500).split("\n").map((h) => h.trim()).filter(Boolean).slice(0, 6);
+  const publish = formData.get("publish") === "on";
+  db.reports.push({ id: crypto.randomUUID(), clientId: c.id, title, cadence: text(formData.get("cadence"), 10) === "Weekly" ? "Weekly" : "Monthly", periodStart: start, periodEnd: end, status: publish ? "Published" : "Draft", summary, highlights, reviewNotes: "" });
+  if (publish) announce(c.id, me.name, `Your new report is ready: ${title}. Open the Reports page to read it.`, "Update");
+  logEvent(me.name, `${publish ? "Published" : "Drafted"} report ${title}`, c.id);
+  refreshAll();
+  return { ok: true };
+}
+
+export async function logWeeklyMetrics(formData: FormData): Promise<Result> {
+  const me = await requireAdmin();
+  const c = ownClient(text(formData.get("clientId"), 64));
+  const weekStart = text(formData.get("weekStart"), 10);
+  if (!isDate(weekStart)) return { error: "Pick the first day of the week." };
+  const spend = num(formData.get("spend"));
+  const leads = num(formData.get("leads"));
+  const revenue = num(formData.get("revenue"));
+  if ([spend, leads, revenue].some((n) => !Number.isFinite(n))) return { error: "Use numbers only." };
+  const row = db.metrics.find((m) => m.clientId === c.id && m.weekStart === weekStart);
+  if (row) Object.assign(row, { spend, leads, revenue });
+  else db.metrics.push({ clientId: c.id, weekStart, spend, leads, revenue });
+  db.metrics.sort((a, b) => a.weekStart.localeCompare(b.weekStart));
+  logEvent(me.name, `Logged numbers for week of ${weekStart}`, c.id);
+  refreshAll();
+  return { ok: true };
+}
+
+export async function updateStrategy(formData: FormData): Promise<Result> {
+  const me = await requireAdmin();
+  const c = ownClient(text(formData.get("clientId"), 64));
+  let s = db.strategies.find((x) => x.clientId === c.id);
+  if (!s) db.strategies.push((s = { clientId: c.id, title: "Growth strategy", updated: today(), summary: "", recommendations: [], plans: [], goals: [], internalDiscussion: "" }));
+  const lines = (k: string) => text(formData.get(k), 3000).split("\n").map((l) => l.trim()).filter(Boolean);
+  const goalLabel = text(formData.get("newGoal"), 80);
+  const goalTarget = num(formData.get("newGoalTarget"));
+  if (goalLabel && !goalTarget) return { error: "Give the new goal a target number." };
+  s.title = text(formData.get("title"), 100) || s.title;
+  s.summary = text(formData.get("summary"), 1500);
+  s.recommendations = lines("recommendations").map((l) => { const [t, ...d] = l.split(":"); return { title: t.trim(), detail: d.join(":").trim() }; });
+  s.plans = lines("plans").map((l) => { const [n, w = "", ...d] = l.split("|"); return { name: n.trim(), window: w.trim(), detail: d.join("|").trim() }; });
+  if (goalLabel) s.goals.push({ label: goalLabel, target: goalTarget, current: 0, unit: "count" });
+  s.updated = today();
+  logEvent(me.name, "Updated strategy", c.id);
+  refreshAll();
+  return { ok: true };
+}
+
+const DOC_KINDS = ["Contract", "Proposal", "Invoice", "Report", "Brand", "Other"] as const;
+
+export async function shareDocument(formData: FormData): Promise<Result> {
+  const me = await requireAdmin();
+  const c = ownClient(text(formData.get("clientId"), 64));
+  const title = text(formData.get("title"), 120);
+  const body = text(formData.get("body"), 6000).split("\n").map((l) => l.trim()).filter(Boolean);
+  const kind = text(formData.get("kind"), 20);
+  if (!title) return { error: "Give the document a title." };
+  if (!body.length) return { error: "Add the document text." };
+  if (!(DOC_KINDS as readonly string[]).includes(kind)) return { error: "Pick a document type." };
+  db.documents.push({ id: crypto.randomUUID(), clientId: c.id, title, kind: kind as (typeof DOC_KINDS)[number], date: today(), visibility: formData.get("internal") === "on" ? "internal" : "client", body });
+  logEvent(me.name, `Shared document ${title}`, c.id);
+  refreshAll();
+  return { ok: true };
+}
+
+export async function toggleDocument(formData: FormData) {
+  const me = await requireAdmin();
+  const d = db.documents.find((x) => x.id === text(formData.get("documentId"), 64));
+  if (!d) return;
+  d.visibility = d.visibility === "client" ? "internal" : "client";
+  logEvent(me.name, `${d.visibility === "client" ? "Shared" : "Hid"} document ${d.title}`, d.clientId);
   refreshAll();
 }

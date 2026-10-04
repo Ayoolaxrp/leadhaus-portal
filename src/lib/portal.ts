@@ -1,7 +1,5 @@
 import "server-only";
-import { notFound } from "next/navigation";
 import { db } from "./data/store";
-import type { PortalSection } from "./data/types";
 
 // Client-safe projections. Every function takes the authenticated client id
 // and returns NEW objects built from an explicit allow-list of fields.
@@ -13,13 +11,9 @@ const mine = <R extends { clientId: string }>(rows: R[], clientId: string) => ro
 export function getAccount(clientId: string) {
   const c = db.clients.find((x) => x.id === clientId);
   if (!c) throw new Error("Unknown client");
-  return { name: c.name, service: c.service, status: c.status, accountLead: c.accountLead, renewalDate: c.renewalDate, sections: { ...c.sections }, welcomeNote: c.welcomeNote };
+  return { name: c.name, service: c.service, status: c.status, accountLead: c.accountLead, renewalDate: c.renewalDate, sections: { ...c.sections }, welcomeNote: c.welcomeNote, onboardingStage: c.onboardingStage };
 }
 
-// Server-side guard: a section the team switched off returns 404, not just a hidden menu item.
-export function requireSection(clientId: string, section: PortalSection) {
-  if (!getAccount(clientId).sections[section]) notFound();
-}
 
 export function getAgencyInfo() {
   const s = db.settings;
