@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+/* Leadhaus tokens. Dark is the brand default; light follows the system.
+   Radius scale (locked): cards 14px, controls 10px, pills full. One accent. */
+:root {
+  --bg: #0b0b0f;
+  --surface: #121219;
+  --surface-2: #191922;
+  --line: #262631;
+  --text: #f3f3f6;
+  --muted: #9b9bab;
+  --accent: #e5386d;
+  --accent-ink: #ffffff;
+  --accent-soft: rgb(229 56 109 / 0.14);
+  --good: #3fc68f;
+  --warn: #e9b44c;
+  --bad: #f06a6a;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #f6f6f8;
+    --surface: #ffffff;
+    --surface-2: #efeff3;
+    --line: #e2e2e8;
+    --text: #121218;
+    --muted: #5e5e6e;
+    --accent: #c81e55;
+    --accent-soft: rgb(200 30 85 / 0.1);
+    --good: #13865a;
+    --warn: #a86a00;
+    --bad: #c23434;
+    color-scheme: light;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+  --color-bad: var(--bad);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --radius-card: 14px;
+  --radius-ctl: 10px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .enter { animation: enter 0.32s cubic-bezier(0.16, 1, 0.3, 1) both; }
+}
+@keyframes enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.num { font-variant-numeric: tabular-nums; }
+
+@media print {
+  aside, nav, .print\:hidden, details, [data-demo-banner] { display: none !important; }
+  body { background: #fff; color: #111; }
+  main { max-width: none; padding: 0; }
+}
