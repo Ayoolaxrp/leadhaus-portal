@@ -1,6 +1,8 @@
 import { requireAdmin } from "@/lib/session";
 import { getAdminData } from "@/lib/admin-runtime";
-import { PageHeader, Card } from "@/components/ui";
+import { PageHeader, Card, btn, field } from "@/components/ui";
+import { ActionForm } from "@/components/action-form";
+import { addTeamMember } from "@/lib/actions";
 
 export const metadata = { title: "Team" };
 
@@ -11,7 +13,17 @@ export default async function Team() {
   return (
     <>
       <PageHeader title="Team" sub="Who owns what across clients and leads."
-        help={["Each card is one team member: how many clients they lead, their open tasks and the leads they follow up.", "To give someone a task, go to Delivery and use Add a task."]} />
+        help={["Each card is one team member: how many clients they lead, their open tasks and the leads they follow up.", "To give someone a task, go to Delivery and use Add a task.", "Use Add a team member to give a colleague access. They get an email with a sign-in link and can then see everything in the team workspace."]} />
+      <details className="mb-6 rounded-[var(--radius-card)] border border-line bg-surface">
+        <summary className="cursor-pointer list-none px-5 py-3.5 text-sm font-medium text-accent">Add a team member</summary>
+        <ActionForm action={addTeamMember} success="Invitation sent. They appear below and can sign in from the email." className="grid gap-3 px-5 pb-5 sm:grid-cols-3">
+          <div><label htmlFor="tm-name" className="mb-1.5 block text-xs text-muted">Name</label><input id="tm-name" name="name" className={field} required /></div>
+          <div><label htmlFor="tm-email" className="mb-1.5 block text-xs text-muted">Email</label><input id="tm-email" name="email" type="email" className={field} required /></div>
+          <div><label htmlFor="tm-title" className="mb-1.5 block text-xs text-muted">Role</label><input id="tm-title" name="title" className={field} placeholder="Account Manager" /></div>
+          <p className="text-xs text-muted sm:col-span-3">Team members see every client, lead, invoice and internal note. Only add people who work at Leadhaus.</p>
+          <div className="sm:col-span-3"><button className={btn.primary}>Send invitation</button></div>
+        </ActionForm>
+      </details>
       <div className="grid gap-6 md:grid-cols-3">
         {team.map((u) => {
           const tasks = db.tasks.filter((t) => t.owner === u.name && t.status !== "Done");

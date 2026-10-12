@@ -1,13 +1,18 @@
 // Adds a Leadhaus team member to the live (Supabase) workspace.
 //
 //   node --env-file=.env.local scripts/add-staff.mjs dare@leadhausstudios.com "Dare" "Founder"
+//   add --no-email to create the account without sending an invite (they sign in
+//   later with "Email me a sign-in link"). Once the portal is live, staff can
+//   also be added from Admin > Team > Add a team member.
 //
 // Sends a Supabase invite (or reuses an existing account), promotes the profile
 // to admin, and lists the person in the workspace so they can be an account lead.
 // Needs NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY and NEXT_PUBLIC_SITE_URL.
 import { createClient } from "@supabase/supabase-js";
 
-const [email, name, title = "Team"] = process.argv.slice(2);
+const args = process.argv.slice(2);
+const noEmail = args.includes("--no-email");
+const [email, name, title = "Team"] = args.filter((a) => a !== "--no-email");
 if (!email || !name) {
   console.error('Usage: node --env-file=.env.local scripts/add-staff.mjs <email> "<name>" ["<title>"]');
   process.exit(1);
@@ -29,10 +34,12 @@ const fail = (step, error) => {
 
 let { data: profile } = await supabase.from("profiles").select("id").eq("email", address).maybeSingle();
 if (!profile) {
-  const { data, error } = await supabase.auth.admin.inviteUserByEmail(address, { data: { full_name: name }, redirectTo: `${site}/auth/callback?next=/` });
-  if (error) fail("Invite", error);
+  const { data, error } = noEmail
+    ? await supabase.auth.admin.createUser({ email: address, email_confirm: true, user_metadata: { full_name: name } })
+    : await supabase.auth.admin.inviteUserByEmail(address, { data: { full_name: name }, redirectTo: `${site}/auth/callback?next=/` });
+  if (error) fail(noEmail ? "Create account" : "Invite", error);
   profile = { id: data.user.id };
-  console.log(`Invite sent to ${address}.`);
+  console.log(noEmail ? `Account created for ${address} (no email sent).` : `Invite sent to ${address}.`);
 } else {
   console.log(`${address} already has an account; promoting it.`);
 }

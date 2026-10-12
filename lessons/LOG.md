@@ -27,3 +27,5 @@
 - The Management API migrations endpoint versions by the second: two migrations sent in the same second collide on `schema_migrations_pkey`. Pause between them.
 - `NEXT_PUBLIC_*` values are inlined at build time: rebuild after adding Supabase keys, or the sign-in form has no URL.
 - Live smoke test (15 checks: staff/client sign-in, provisioning RPC, website lead, RLS denials, sign-up blocked) passed against the real project, then all test rows were deleted.
+- The first regex fix reported success but the committed code still had `\s`; the live smoke test missed it because it called the provisioning RPC directly. All forms now use `src/lib/email.ts`, and `tests/email.test.ts` fails if a hand-written email regex reappears.
+- Dare's account was created as admin with `scripts/add-staff.mjs --no-email`: no invite is sent before the portal has a public URL. Staff can now be added in Admin > Team.

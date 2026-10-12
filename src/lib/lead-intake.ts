@@ -1,4 +1,5 @@
 import type { Lead } from "./data/types";
+import { isEmail } from "./email";
 
 // Turns a leadhausstudios.com form submission into a Leads row. The website
 // keeps sending to Formspree and the Google Sheet; this is an extra copy so the
@@ -41,7 +42,7 @@ export function leadFromWebsite(data: FormData, owner: string, now = new Date())
   const phone = field(data, "whatsapp", 40);
   if (!contact) return { error: "Missing name." };
   if (!email && !phone) return { error: "Missing email or WhatsApp." };
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "Invalid email." };
+  if (email && !isEmail(email)) return { error: "Invalid email." };
 
   const category = field(data, "lead_category", 10).toUpperCase();
   const score: Lead["score"] = category === "HOT" ? "HOT" : category === "LOW-FIT" ? "LOW" : "WARM";

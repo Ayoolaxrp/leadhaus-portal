@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { logEvent, resetStore } from "./data/store";
+import { isEmail } from "./email";
 import { stateProxy } from "./supabase/persistent-store";
 import { SESSION_COOKIE, sign, requireClient, requireAdmin } from "./session";
 import type { Lead, Message, OnboardingStage, PortalSection } from "./data/types";
@@ -228,6 +229,33 @@ async function addLeadImplementation(formData: FormData): Promise<Result> {
   return { ok: true };
 }
 
+async function addTeamMemberImplementation(formData: FormData): Promise<Result> {
+  const me = await requireAdmin();
+  const name = text(formData.get("name"), 60);
+  const email = text(formData.get("email"), 120).toLowerCase();
+  const title = text(formData.get("title"), 60) || "Team";
+  if (!name) return { error: "Add their name." };
+  if (!isEmail(email)) return { error: "Enter a valid email." };
+  if (store.users.some((u) => u.email === email)) return { error: "That email already has portal access." };
+  if (store.users.some((u) => u.role === "admin" && u.name.toLowerCase() === name.toLowerCase())) return { error: "A team member with that name already exists. Add a surname." };
+  let id = `u_${crypto.randomUUID().slice(0, 8)}`;
+  if (isSupabaseAuthEnabled()) {
+    const serviceClient = createServiceSupabaseClient();
+    const { data: invited, error: inviteError } = await serviceClient.auth.admin.inviteUserByEmail(email, { data: { full_name: name }, redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/callback?next=/` });
+    if (inviteError || !invited.user) return { error: inviteError?.message ?? "Could not send the invitation." };
+    const { error } = await serviceClient.from("profiles").update({ role: "admin", client_id: null, full_name: name, title }).eq("id", invited.user.id);
+    if (error) {
+      await serviceClient.auth.admin.deleteUser(invited.user.id);
+      return { error: `Could not make them staff, so the invitation was cancelled: ${error.message}` };
+    }
+    id = invited.user.id;
+  }
+  store.users.push({ id, name, email, role: "admin", title });
+  logEvent(me.name, `Added team member ${name}`);
+  refreshAll();
+  return { ok: true };
+}
+
 async function addTaskImplementation(formData: FormData): Promise<Result> {
   const me = await requireAdmin();
   const clientId = text(formData.get("clientId"), 64);
@@ -288,7 +316,7 @@ async function saveAgencySettingsImplementation(formData: FormData): Promise<Res
   const agencyName = text(formData.get("agencyName"), 80);
   const supportEmail = text(formData.get("supportEmail"), 120);
   if (!agencyName) return { error: "Add the agency name." };
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supportEmail)) return { error: "Enter a valid support email, for example hello@leadhaus.studio." };
+  if (!isEmail(supportEmail)) return { error: "Enter a valid support email, for example hello@leadhaus.studio." };
   const accountNumber = text(formData.get("accountNumber"), 20);
   if (accountNumber && !/^\d{10}$/.test(accountNumber)) return { error: "Nigerian account numbers have 10 digits." };
   s.agencyName = agencyName;
@@ -451,7 +479,7 @@ async function createClientImplementation(formData: FormData): Promise<Result> {
   const service = text(formData.get("service"), 40);
   if (!name) return { error: "Add the business name." };
   if (!contactName) return { error: "Add the name of the person who will sign in." };
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "Enter a valid email for the person who will sign in." };
+  if (!isEmail(email)) return { error: "Enter a valid email for the person who will sign in." };
   if (!(SERVICES as readonly string[]).includes(service)) return { error: "Pick a service." };
   if (store.clients.some((c) => c.name.toLowerCase() === name.toLowerCase())) return { error: "A client with that name already exists." };
   if (store.users.some((u) => u.email === email)) return { error: "That email already has portal access." };
@@ -714,7 +742,7 @@ async function inviteAndProvisionClient(formData: FormData, me: Awaited<ReturnTy
   const service = text(formData.get("service"), 40);
   if (!name) return { error: "Add the business name." };
   if (!contactName) return { error: "Add the name of the person who will sign in." };
-  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) return { error: "Enter a valid email for the person who will sign in." };
+  if (!isEmail(email)) return { error: "Enter a valid email for the person who will sign in." };
   if (!(SERVICES as readonly string[]).includes(service)) return { error: "Pick a service." };
   const serviceClient = createServiceSupabaseClient();
   const { data: invited, error: inviteError } = await serviceClient.auth.admin.inviteUserByEmail(email, { data: { full_name: contactName }, redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/callback?next=/` });
@@ -758,6 +786,7 @@ export async function createInvoice(formData: FormData) { return runPersistentMu
 export async function advanceLead(formData: FormData) { return runPersistentMutation(() => advanceLeadImplementation(formData)); }
 export async function markLeadLost(formData: FormData) { return runPersistentMutation(() => markLeadLostImplementation(formData)); }
 export async function addLead(formData: FormData) { return runPersistentMutation(() => addLeadImplementation(formData)); }
+export async function addTeamMember(formData: FormData) { return runPersistentMutation(() => addTeamMemberImplementation(formData)); }
 export async function addTask(formData: FormData) { return runPersistentMutation(() => addTaskImplementation(formData)); }
 export async function completeTask(formData: FormData) { return runPersistentMutation(() => completeTaskImplementation(formData)); }
 export async function publishReport(formData: FormData) { return runPersistentMutation(() => publishReportImplementation(formData)); }
