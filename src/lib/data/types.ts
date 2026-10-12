@@ -224,6 +224,11 @@ export type Lead = {
   score: "HOT" | "WARM" | "LOW";
   owner: string;
   nextAction: string;
+  // Filled when the lead arrives from a website form (see src/lib/lead-intake.ts).
+  email?: string;
+  phone?: string;
+  receivedAt?: string;
+  answers?: { label: string; value: string }[];
 };
 
 export type CollaboratorPayment = {

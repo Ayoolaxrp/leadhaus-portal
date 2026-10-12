@@ -2,9 +2,8 @@ import "server-only";
 import type { User } from "./data/types";
 import * as demo from "./portal";
 import { isLiveRuntime } from "./data/runtime";
-import { withPersistentStore } from "./supabase/persistent-store";
+import { stateProxy, withPersistentStore } from "./supabase/persistent-store";
 
-import { db } from "./data/store";
 
 const localClientId = (user: User) => {
   if (user.role !== "client" || !user.clientId) throw new Error("A linked client profile is required.");
@@ -28,4 +27,4 @@ export const getTasks = (user: User) => fromStore(user, demo.getTasks);
 export const getInvoices = (user: User) => fromStore(user, demo.getInvoices);
 export const getInvoice = (user: User, id: string) => fromStore(user, (clientId) => demo.getInvoice(clientId, id));
 export const getDocument = (user: User, id: string) => fromStore(user, (clientId) => demo.getDocument(clientId, id));
-export const getAgencyInfo = () => isLiveRuntime() ? withPersistentStore(async () => ({ ...db.settings, bank: { ...db.settings.bank } })) : demo.getAgencyInfo();
+export const getAgencyInfo = () => isLiveRuntime() ? withPersistentStore(async () => ({ ...stateProxy.settings, bank: { ...stateProxy.settings.bank } })) : demo.getAgencyInfo();

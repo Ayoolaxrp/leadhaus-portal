@@ -14,14 +14,14 @@ export default async function Leads({ searchParams }: PageProps<"/admin/leads">)
   const db = await getAdminData();
   const q = String((await searchParams).q ?? "").toLowerCase();
   const team = db.users.filter((u) => u.role === "admin");
-  const leads = db.leads.filter((l) => !q || `${l.company} ${l.contact} ${l.source} ${l.owner}`.toLowerCase().includes(q));
+  const leads = db.leads.filter((l) => !q || `${l.company} ${l.contact} ${l.source} ${l.owner} ${l.email ?? ""} ${l.phone ?? ""}`.toLowerCase().includes(q));
 
   return (
     <>
       <PageHeader
         title="Leads"
         sub="Every opportunity from first contact to signed client."
-        help={["Type in the search box and click Search to find a lead. Clear the box and search again to see everyone.", "Click Advance to move a lead to the next stage, for example from Contacted to Qualified.", "Click Lost if the lead said no. Lost leads stay in the list so you can learn why deals are lost.", "Use Add a lead to record someone new. HOT, WARM and LOW is how likely they are to sign."]}
+        help={["Type in the search box and click Search to find a lead. Clear the box and search again to see everyone.", "Click Advance to move a lead to the next stage, for example from Contacted to Qualified.", "Click Lost if the lead said no. Lost leads stay in the list so you can learn why deals are lost.", "Use Add a lead to record someone new. HOT, WARM and LOW is how likely they are to sign.", "Leads from the website forms appear here on their own, marked New Lead. Click Answers to see what they filled in."]}
         action={
           <form className="flex gap-2" role="search">
             <label htmlFor="q" className="sr-only">Search leads</label>
@@ -59,7 +59,24 @@ export default async function Leads({ searchParams }: PageProps<"/admin/leads">)
           <tbody className="divide-y divide-line">
             {leads.map((l) => (
               <tr key={l.id}>
-                <td className="py-3"><p className="font-medium">{l.company}</p><p className="text-xs text-muted">{l.contact}</p></td>
+                <td className="py-3 align-top">
+                  <p className="font-medium">{l.company}</p>
+                  <p className="text-xs text-muted">{l.contact}</p>
+                  {(l.email || l.phone) && (
+                    <p className="mt-0.5 flex flex-wrap gap-x-3 text-xs">
+                      {l.email && <a className="text-accent hover:underline" href={`mailto:${l.email}`}>{l.email}</a>}
+                      {l.phone && <a className="text-accent hover:underline" href={`https://wa.me/${l.phone.replace(/\D/g, "")}`} target="_blank" rel="noreferrer">{l.phone}</a>}
+                    </p>
+                  )}
+                  {!!l.answers?.length && (
+                    <details className="mt-1 text-xs">
+                      <summary className="cursor-pointer text-muted hover:text-text">Answers{l.receivedAt ? `, ${l.receivedAt.slice(0, 10)}` : ""}</summary>
+                      <dl className="mt-1.5 grid max-w-md grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+                        {l.answers.map((a) => <div key={a.label} className="contents"><dt className="text-muted">{a.label}</dt><dd>{a.value}</dd></div>)}
+                      </dl>
+                    </details>
+                  )}
+                </td>
                 <td className="py-3 text-muted">{l.source}</td>
                 <td className="py-3 text-muted">{l.owner}</td>
                 <td className="py-3"><Badge tone={l.score === "HOT" ? "accent" : l.score === "WARM" ? "warn" : "muted"}>{l.score}</Badge></td>

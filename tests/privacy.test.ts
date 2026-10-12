@@ -9,7 +9,7 @@ import { db } from "../src/lib/data/store";
 const fns = [portal.getAccount, portal.getCampaigns, portal.getPerformance, portal.getProjects, portal.getCreatives, portal.getStrategy, portal.getReports, portal.getOnboarding, portal.getDocuments, portal.getMessages, portal.getTasks, portal.getInvoices];
 const dump = (clientId: string) => JSON.stringify(fns.map((f) => f(clientId)));
 
-const INTERNAL_KEYS = ["marginPct", "internalNotes", "health", "monthlyFee", "capacityNote", "owner", "designer", "productionCost", "internalDiscussion", "reviewNotes", "visibility", "clientVisible", "internal", "score", "clientId", "relatesTo", "answered"];
+const INTERNAL_KEYS = ["marginPct", "internalNotes", "health", "monthlyFee", "capacityNote", "owner", "designer", "productionCost", "internalDiscussion", "reviewNotes", "visibility", "clientVisible", "internal", "score", "clientId", "relatesTo", "answered", "answers", "receivedAt"];
 
 for (const client of db.clients) {
   const out = dump(client.id);

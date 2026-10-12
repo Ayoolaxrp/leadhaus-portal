@@ -1,15 +1,14 @@
 import "server-only";
 import { AsyncLocalStorage } from "node:async_hooks";
-import { db, emptyStore, type Store } from "@/lib/data/store";
+import { db, emptyStore, setActiveStoreResolver, type Store } from "@/lib/data/store";
 import { createServiceSupabaseClient } from "./admin";
 
 const requestState = new AsyncLocalStorage<{ store: Store; revision: number }>();
 const requestStore = new AsyncLocalStorage<Store>();
 const isolatedState = new AsyncLocalStorage<Store>();
-export const stateProxy = new Proxy(db, {
-  get(target, key, receiver) { return Reflect.get(requestStore.getStore() ?? target, key, receiver); },
-  set(target, key, value, receiver) { return Reflect.set(requestStore.getStore() ?? target, key, value, receiver); },
-});
+setActiveStoreResolver(() => requestStore.getStore() ?? isolatedState.getStore());
+// `db` now follows the active request store; kept under this name for existing imports.
+export const stateProxy = db;
 
 function decodeState(value: unknown): Store {
   if (!value || typeof value !== "object") throw new Error("Persistent app state is not initialized.");

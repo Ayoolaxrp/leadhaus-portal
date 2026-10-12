@@ -200,12 +200,27 @@ export function emptyStore(): Store {
   return { settings: { agencyName: "Leadhaus Studios", supportEmail: "", supportWhatsApp: "", replyPromise: "within one working day", bank: { bank: "", accountName: "", accountNumber: "" }, announcement: "" }, users: [], clients: [], campaigns: [], metrics: [], projects: [], creatives: [], strategies: [], reports: [], onboarding: [], documents: [], messages: [], tasks: [], invoices: [], leads: [], collaboratorPayments: [], uploads: [], audit: [] };
 }
 
+// Live mode (production) never loads the sample data: everything comes from the
+// request's Supabase-backed store, registered by supabase/persistent-store.ts.
+const live = process.env.AUTH_PROVIDER !== "demo" && (process.env.NODE_ENV === "production" || process.env.AUTH_PROVIDER === "supabase");
 const g = globalThis as unknown as { __leadhausStore?: Store };
-export const db: Store = (g.__leadhausStore ??= seed());
+const base: Store = (g.__leadhausStore ??= live ? emptyStore() : seed());
+
+let activeStore: () => Store | undefined = () => undefined;
+export function setActiveStoreResolver(resolve: () => Store | undefined) {
+  activeStore = resolve;
+}
+
+// Reads and writes go to the current request's store when there is one, so
+// helpers like logEvent persist in live mode instead of touching process memory.
+export const db: Store = new Proxy(base, {
+  get: (target, key) => Reflect.get(activeStore() ?? target, key),
+  set: (target, key, value) => Reflect.set(activeStore() ?? target, key, value),
+});
 
 // Restores the demo data to its starting state (used by the Reset button and tests).
 export function resetStore() {
-  Object.assign(db, seed());
+  Object.assign(base, live ? emptyStore() : seed());
 }
 
 export function logEvent(actor: string, action: string, clientId?: string) {
