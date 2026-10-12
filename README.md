@@ -36,7 +36,7 @@ npm run e2e        # clicks every feature in Chrome as a client and as the team 
 npm run build
 ```
 
-Demo mode keeps data in memory (`src/lib/data/store.ts`) and resets on server restart or when someone clicks **Reset demo** on the sign in page. Copy `.env.example`: `SESSION_SECRET` is required in production, `DEMO_PASSCODE` adds an access code to the sign in page.
+Demo mode keeps data in memory (`src/lib/data/store.ts`) and resets on server restart or when someone clicks **Reset demo** on the sign in page. Copy `.env.example`: `SESSION_SECRET` is required in production, and production demo access requires `DEMO_PASSCODE`. This shared code is only an access gate for the demo account picker; it is not per-user authentication. Connect Supabase Auth before using the portal with real client data.
 
 Non-technical testers: give them `TESTING_GUIDE.md` (67 tick-box steps, plain English).
 
@@ -58,10 +58,21 @@ Non-technical testers: give them `TESTING_GUIDE.md` (67 tick-box steps, plain En
 
 Requirements: Node 20.9 or newer. Environment variables are listed in `.env.example`.
 
-## Next steps to production
+## Going live (off demo)
 
-1. Create a Supabase project, `supabase db push`, swap `src/lib/data/store.ts` reads for Supabase queries (keep `portal.ts` signatures).
-2. Supabase Auth magic link replaces the demo account picker; `profiles.role` and `profiles.client_id` drive `requireClient()`.
-3. Supabase Storage for creatives, documents and uploads under `clients/<client_id>/`, served with 10-minute signed URLs.
-4. Email notifications (approval needed, report ready, invoice due) using the templates in `Documents/Agency-Workspace/Lead Haus OS/Emails`.
-5. Paystack for card payments on invoices. Meta/Google Ads sync into `weekly_metrics`.
+Production builds run in live mode: Supabase Auth sign-in, data in Supabase, no demo accounts. The website links to the portal from "Client Login" at `https://portal.leadhausstudios.com/login`.
+
+1. **Supabase project.** Create a new project for Leadhaus (not shared with any other client). Link and push the schema:
+   `npx supabase link --project-ref <ref>` then `npx supabase db push` (applies `supabase/migrations/0001` to `0003`, empty workspace, no sample data).
+2. **Auth settings** (Supabase dashboard > Authentication > URL configuration): Site URL `https://portal.leadhausstudios.com`, add `https://portal.leadhausstudios.com/auth/callback` to redirect URLs. Set up custom SMTP so invite emails come from a Leadhaus address.
+3. **Host** on Vercel (or any Node host). Env vars from `.env.example`: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_MAIN_SITE_URL`.
+4. **Domain.** Add `portal.leadhausstudios.com` to the host, then a CNAME at the domain's DNS provider.
+5. **Team accounts.** For each staff member:
+   `node --env-file=.env.local scripts/add-staff.mjs dare@leadhausstudios.com "Dare" "Founder"`
+   They get an invite email and land in `/admin`.
+6. **Clients.** Staff add clients in Admin > Clients. That sends the client an invite and creates their portal.
+7. Merge the "Client Login" pull request on the website repo.
+
+Not built yet: file contents for creatives, documents and client uploads (only the file details are saved; Supabase Storage with 10-minute signed URLs is next), email notifications for workflow events, Paystack, Meta/Google Ads sync.
+
+Local live-mode testing: put the keys in `.env.local` and set `AUTH_PROVIDER=supabase`. The e2e suite forces `AUTH_PROVIDER=demo`.

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/session";
-import { agencyOverview, clientName, db } from "@/lib/admin";
+import { adminOverview, getAdminData } from "@/lib/admin-runtime";
 import { PageHeader, Card, SectionTitle, Stat, Status, Empty } from "@/components/ui";
 import { moneyShort, date, dateTime, greeting } from "@/lib/format";
 
@@ -8,14 +8,15 @@ export const metadata = { title: "Overview" };
 
 export default async function AdminHome() {
   const me = await requireAdmin();
-  const o = agencyOverview();
+  const [o, db] = await Promise.all([adminOverview(), getAdminData()]);
+  const clientName = (id: string) => db.clients.find((client) => client.id === id)?.name ?? id;
   const due = db.tasks.filter((t) => t.status !== "Done" && t.assignee === "agency").sort((a, b) => a.due.localeCompare(b.due)).slice(0, 6);
   const attention = [
-    ...db.creatives.filter((c) => c.status === "Revision requested").map((c) => ({ k: c.id, text: `${clientName(c.clientId)} asked for changes on ${c.title}`, href: "/admin/delivery" })),
+    ...db.creatives.filter((c) => c.status === "Revision requested").map((c) => ({ k: c.id, text: `${db.clients.find((client) => client.id === c.clientId)?.name ?? c.clientId} asked for changes on ${c.title}`, href: "/admin/delivery" })),
     ...db.messages.filter((m) => m.kind === "Question" && m.fromRole === "client" && !m.answered).map((m) => ({ k: m.id, text: `${m.from} asked: ${m.body}`, href: `/admin/inbox?c=${m.clientId}` })),
-    ...db.invoices.filter((i) => i.clientMarkedPaidAt && i.status !== "Paid").map((i) => ({ k: `${i.id}-sent`, text: `${clientName(i.clientId)} says ${i.number} is paid. Check the bank and confirm.`, href: "/admin/finance" })),
-    ...db.invoices.filter((i) => i.status === "Overdue").map((i) => ({ k: i.id, text: `${i.number} for ${clientName(i.clientId)} is overdue`, href: "/admin/finance" })),
-    ...db.reports.filter((r) => r.status === "Draft").map((r) => ({ k: r.id, text: `${r.title} for ${clientName(r.clientId)} is still a draft`, href: "/admin/delivery" })),
+    ...db.invoices.filter((i) => i.clientMarkedPaidAt && i.status !== "Paid").map((i) => ({ k: `${i.id}-sent`, text: `${db.clients.find((client) => client.id === i.clientId)?.name ?? i.clientId} says ${i.number} is paid. Check the bank and confirm.`, href: "/admin/finance" })),
+    ...db.invoices.filter((i) => i.status === "Overdue").map((i) => ({ k: i.id, text: `${i.number} for ${db.clients.find((client) => client.id === i.clientId)?.name ?? i.clientId} is overdue`, href: "/admin/finance" })),
+    ...db.reports.filter((r) => r.status === "Draft").map((r) => ({ k: r.id, text: `${r.title} for ${db.clients.find((client) => client.id === r.clientId)?.name ?? r.clientId} is still a draft`, href: "/admin/delivery" })),
   ];
 
   return (
@@ -43,7 +44,7 @@ export default async function AdminHome() {
           <ul className="divide-y divide-line">
             {due.map((t) => (
               <li key={t.id} className="flex items-center justify-between gap-3 py-3 text-sm">
-                <div className="min-w-0"><p className="truncate">{t.title}</p><p className="text-xs text-muted">{clientName(t.clientId)}, {t.owner}{!t.clientVisible && ", internal"}</p></div>
+                <div className="min-w-0"><p className="truncate">{t.title}</p><p className="text-xs text-muted">{db.clients.find((client) => client.id === t.clientId)?.name ?? t.clientId}, {t.owner}{!t.clientVisible && ", internal"}</p></div>
                 <span className="num shrink-0 text-xs text-muted">{date(t.due)}</span>
               </li>
             ))}

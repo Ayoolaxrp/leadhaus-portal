@@ -1,10 +1,11 @@
 import { Shell, type NavItem } from "@/components/shell";
 import { requireAdmin } from "@/lib/session";
 import { signOut } from "@/lib/actions";
-import { db } from "@/lib/admin";
+import { getAdminData } from "@/lib/admin-runtime";
 
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const me = await requireAdmin();
+  const db = await getAdminData();
   const questions = db.messages.filter((m) => m.kind === "Question" && m.fromRole === "client" && !m.answered).length;
   const overdue = db.invoices.filter((i) => i.status === "Overdue").length;
   const nav: NavItem[] = [
@@ -18,7 +19,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
     { href: "/admin/settings", label: "Settings", icon: "GearSix" },
   ];
   return (
-    <Shell nav={nav} workspace="Leadhaus Studios" workspaceLabel="Agency workspace" user={me} signOut={signOut}>
+    <Shell nav={nav} workspace="Leadhaus Studios" workspaceLabel="Agency workspace" user={me} signOut={signOut} demo={process.env.NODE_ENV !== "production" && !process.env.NEXT_PUBLIC_SUPABASE_URL}>
       {children}
     </Shell>
   );

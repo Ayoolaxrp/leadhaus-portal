@@ -1,5 +1,5 @@
 import { requireClient } from "@/lib/session";
-import { getInvoices } from "@/lib/portal";
+import { getInvoices } from "@/lib/portal-runtime";
 import { requireSection } from "@/lib/portal-guard";
 import Link from "next/link";
 import { PageHeader, Card, Stat, Status, Empty, Badge, btn } from "@/components/ui";
@@ -9,8 +9,8 @@ export const metadata = { title: "Billing" };
 
 export default async function Billing() {
   const me = await requireClient();
-  requireSection(me.clientId, "billing");
-  const invoices = getInvoices(me.clientId);
+  await requireSection(me.clientId, "billing");
+  const invoices = await getInvoices(me);
   const open = invoices.filter((i) => i.status !== "Paid");
   const paid = invoices.filter((i) => i.status === "Paid");
   const due = open.reduce((a, i) => a + i.amount, 0);

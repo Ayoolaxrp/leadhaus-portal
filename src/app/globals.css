@@ -3,15 +3,15 @@
 /* Leadhaus tokens. Dark is the brand default; light follows the system.
    Radius scale (locked): cards 14px, controls 10px, pills full. One accent. */
 :root {
-  --bg: #0b0b0f;
+  --bg: #09090e;
   --surface: #121219;
   --surface-2: #191922;
   --line: #262631;
   --text: #f3f3f6;
   --muted: #9b9bab;
-  --accent: #e5386d;
+  --accent: #e94560;
   --accent-ink: #ffffff;
-  --accent-soft: rgb(229 56 109 / 0.14);
+  --accent-soft: rgb(233 69 96 / 0.14);
   --good: #3fc68f;
   --warn: #e9b44c;
   --bad: #f06a6a;
@@ -26,8 +26,8 @@
     --line: #e2e2e8;
     --text: #121218;
     --muted: #5e5e6e;
-    --accent: #c81e55;
-    --accent-soft: rgb(200 30 85 / 0.1);
+    --accent: #c92a48;
+    --accent-soft: rgb(201 42 72 / 0.1);
     --good: #13865a;
     --warn: #a86a00;
     --bad: #c23434;
@@ -68,12 +68,28 @@ body {
 @media (prefers-reduced-motion: no-preference) {
   .enter { animation: enter 0.32s cubic-bezier(0.16, 1, 0.3, 1) both; }
 }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
 @keyframes enter {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: none; }
 }
 
 .num { font-variant-numeric: tabular-nums; }
+
+@media (prefers-reduced-transparency: reduce) {
+  [data-app-chrome] { background-color: var(--bg); backdrop-filter: none; }
+}
+
+@media (prefers-contrast: more) {
+  [data-app-chrome] { border-color: var(--muted); }
+}
 
 @media print {
   aside, nav, .print\:hidden, details, [data-demo-banner] { display: none !important; }

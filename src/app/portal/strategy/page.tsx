@@ -1,5 +1,5 @@
 import { requireClient } from "@/lib/session";
-import { getStrategy } from "@/lib/portal";
+import { getStrategy } from "@/lib/portal-runtime";
 import { requireSection } from "@/lib/portal-guard";
 import { PageHeader, Card, Empty, Badge } from "@/components/ui";
 import { date, money, ratio } from "@/lib/format";
@@ -11,8 +11,8 @@ const fmt = (n: number, unit: "count" | "currency" | "ratio") => (unit === "curr
 
 export default async function Strategy() {
   const me = await requireClient();
-  requireSection(me.clientId, "strategy");
-  const s = getStrategy(me.clientId);
+  await requireSection(me.clientId, "strategy");
+  const s = await getStrategy(me);
   if (!s) return (<><PageHeader title="Strategy" /><Empty title="Strategy in progress" body="Your growth strategy will appear here after the kickoff call." /></>);
 
   return (

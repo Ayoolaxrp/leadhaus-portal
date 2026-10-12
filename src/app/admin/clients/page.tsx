@@ -1,5 +1,5 @@
 import { requireAdmin } from "@/lib/session";
-import { db } from "@/lib/admin";
+import { getAdminData } from "@/lib/admin-runtime";
 import Link from "next/link";
 import { postClientMessage, createClient } from "@/lib/actions";
 import { SERVICES } from "@/lib/data/types";
@@ -11,6 +11,7 @@ export const metadata = { title: "Clients" };
 
 export default async function Clients() {
   await requireAdmin();
+  const db = await getAdminData();
   return (
     <>
       <PageHeader title="Clients" sub="Relationship view per account. Fields marked internal never reach the client portal."

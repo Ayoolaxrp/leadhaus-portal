@@ -1,5 +1,5 @@
 import { requireAdmin } from "@/lib/session";
-import { db } from "@/lib/admin";
+import { getAdminData } from "@/lib/admin-runtime";
 import { saveAgencySettings } from "@/lib/actions";
 import { PageHeader, Card, btn, field } from "@/components/ui";
 import { ActionForm } from "@/components/action-form";
@@ -18,6 +18,7 @@ function Field({ id, label, hint, children }: { id: string; label: string; hint?
 
 export default async function Settings() {
   await requireAdmin();
+  const db = await getAdminData();
   const s = db.settings;
   return (
     <>

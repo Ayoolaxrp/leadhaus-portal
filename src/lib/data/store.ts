@@ -196,6 +196,9 @@ function seed() {
 }
 
 export type Store = ReturnType<typeof seed>;
+export function emptyStore(): Store {
+  return { settings: { agencyName: "Leadhaus Studios", supportEmail: "", supportWhatsApp: "", replyPromise: "within one working day", bank: { bank: "", accountName: "", accountNumber: "" }, announcement: "" }, users: [], clients: [], campaigns: [], metrics: [], projects: [], creatives: [], strategies: [], reports: [], onboarding: [], documents: [], messages: [], tasks: [], invoices: [], leads: [], collaboratorPayments: [], uploads: [], audit: [] };
+}
 
 const g = globalThis as unknown as { __leadhausStore?: Store };
 export const db: Store = (g.__leadhausStore ??= seed());

@@ -1,11 +1,12 @@
 import { requireAdmin } from "@/lib/session";
-import { db } from "@/lib/admin";
+import { getAdminData } from "@/lib/admin-runtime";
 import { PageHeader, Card } from "@/components/ui";
 
 export const metadata = { title: "Team" };
 
 export default async function Team() {
   await requireAdmin();
+  const db = await getAdminData();
   const team = db.users.filter((u) => u.role === "admin");
   return (
     <>

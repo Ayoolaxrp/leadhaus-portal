@@ -17,7 +17,7 @@ export function Shell({ nav, workspace, workspaceLabel, user, signOut, demo = tr
 
   return (
     <div className="min-h-[100dvh] lg:grid lg:grid-cols-[248px_1fr]">
-      <aside className="sticky top-0 z-20 border-b border-line bg-bg/90 backdrop-blur lg:h-[100dvh] lg:border-r lg:border-b-0">
+      <aside data-app-chrome className="sticky top-0 z-20 border-b border-line bg-bg/90 backdrop-blur lg:h-[100dvh] lg:border-r lg:border-b-0">
         <div className="flex items-center justify-between gap-3 px-4 py-3 lg:block lg:px-5 lg:py-6">
           <Link href={nav[0].href} className="flex items-center gap-2.5 text-[13px] font-semibold tracking-[0.08em]">
             <span className="h-1 w-6 rounded-full bg-accent" aria-hidden />

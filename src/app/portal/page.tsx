@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireClient } from "@/lib/session";
 import { Megaphone, ChatCircleText } from "@phosphor-icons/react/dist/ssr";
-import { getAccount, getCampaigns, getPerformance, getTasks, getMessages, getCreatives, getAgencyInfo } from "@/lib/portal";
+import { getAccount, getCampaigns, getPerformance, getTasks, getMessages, getCreatives, getAgencyInfo } from "@/lib/portal-runtime";
 import { PageHeader, Card, SectionTitle, Stat, Status, Row, Empty, btn } from "@/components/ui";
 import { WeeklyBars } from "@/components/chart";
 import { StageTracker } from "@/components/stage-tracker";
@@ -18,14 +18,13 @@ function delta(cur: number, prev: number, lowerIsBetter = false) {
 
 export default async function Dashboard() {
   const me = await requireClient();
-  const account = getAccount(me.clientId);
-  const agency = getAgencyInfo();
+  const account = await getAccount(me);
+  const agency = await getAgencyInfo();
   const on = account.sections;
-  const perf = getPerformance(me.clientId);
-  const campaigns = getCampaigns(me.clientId);
-  const tasks = getTasks(me.clientId).filter((t) => t.assignee === "client");
-  const updates = getMessages(me.clientId).filter((m) => m.fromRole === "admin").slice(0, 3);
-  const reviews = getCreatives(me.clientId).filter((c) => c.status === "Client review");
+  const [perf, campaigns, tasksAll, messagesAll, creativesAll] = await Promise.all([getPerformance(me), getCampaigns(me), getTasks(me), getMessages(me), getCreatives(me)]);
+  const tasks = tasksAll.filter((t) => t.assignee === "client");
+  const updates = messagesAll.filter((m) => m.fromRole === "admin").slice(0, 3);
+  const reviews = creativesAll.filter((c) => c.status === "Client review");
   const { current: cur, previous: prev } = perf;
   const greet = greeting();
   const live = campaigns.filter((c) => ["Live", "Optimising"].includes(c.status)).length;

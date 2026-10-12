@@ -1,6 +1,6 @@
 import { CheckCircle, Circle } from "@phosphor-icons/react/dist/ssr";
 import { requireClient } from "@/lib/session";
-import { getOnboarding, getAccount } from "@/lib/portal";
+import { getOnboarding, getAccount } from "@/lib/portal-runtime";
 import { requireSection } from "@/lib/portal-guard";
 import { completeOnboardingItem, uploadAssets } from "@/lib/actions";
 import { PageHeader, Card, Progress, btn, field } from "@/components/ui";
@@ -18,9 +18,10 @@ const groups = [
 
 export default async function Onboarding() {
   const me = await requireClient();
-  requireSection(me.clientId, "onboarding");
-  const { items, uploads, pct } = getOnboarding(me.clientId);
-  const stage = getAccount(me.clientId).onboardingStage;
+  await requireSection(me.clientId, "onboarding");
+  const [onboarding, account] = await Promise.all([getOnboarding(me), getAccount(me)]);
+  const { items, uploads, pct } = onboarding;
+  const stage = account.onboardingStage;
   const open = items.filter((i) => !i.done);
 
   return (

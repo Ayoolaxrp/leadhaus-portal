@@ -5,8 +5,8 @@ const DEV_SECRET = "dev-only-leadhaus-secret-change-me";
 function secret() {
   const s = process.env.SESSION_SECRET;
   if (s) return s;
-  // Refuse to run a deployed server with a guessable secret.
-  if (process.env.NODE_ENV === "production" && process.env.VERCEL) throw new Error("SESSION_SECRET must be set in production. See .env.example.");
+  // Never run a production server with a guessable secret, regardless of host.
+  if (process.env.NODE_ENV === "production") throw new Error("SESSION_SECRET must be set in production. See .env.example.");
   return DEV_SECRET;
 }
 

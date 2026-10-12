@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { db } from "./data/store";
 import type { User } from "./data/types";
 import { sign, verify } from "./session-token";
+import { getSupabaseUser } from "./supabase/user";
+import { isSupabaseAuthEnabled } from "./supabase/server";
 
 export { sign };
 
@@ -12,6 +14,7 @@ export { sign };
 
 export const SESSION_COOKIE = "lh_session";
 export async function getUser(): Promise<User | null> {
+  if (isSupabaseAuthEnabled()) return getSupabaseUser();
   const id = verify((await cookies()).get(SESSION_COOKIE)?.value);
   return db.users.find((u) => u.id === id) ?? null;
 }
@@ -21,7 +24,8 @@ export type ClientSession = User & { role: "client"; clientId: string };
 export async function requireClient(): Promise<ClientSession> {
   const u = await getUser();
   if (!u) redirect("/login");
-  if (u.role !== "client" || !u.clientId) redirect("/admin");
+  if (u.role !== "client") redirect("/admin");
+  if (!u.clientId) redirect("/login?error=unassigned");
   return u as ClientSession;
 }
 

@@ -1,5 +1,5 @@
 import { requireClient } from "@/lib/session";
-import { getProjects, getCampaigns } from "@/lib/portal";
+import { getProjects, getCampaigns } from "@/lib/portal-runtime";
 import { requireSection } from "@/lib/portal-guard";
 import { PageHeader, Card, Progress, Status, Empty } from "@/components/ui";
 import { date, money } from "@/lib/format";
@@ -8,9 +8,8 @@ export const metadata = { title: "Projects" };
 
 export default async function Projects() {
   const me = await requireClient();
-  requireSection(me.clientId, "projects");
-  const projects = getProjects(me.clientId);
-  const campaigns = getCampaigns(me.clientId);
+  await requireSection(me.clientId, "projects");
+  const [projects, campaigns] = await Promise.all([getProjects(me), getCampaigns(me)]);
 
   return (
     <>

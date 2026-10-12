@@ -1,5 +1,5 @@
 import { requireClient } from "@/lib/session";
-import { getCreatives } from "@/lib/portal";
+import { getCreatives } from "@/lib/portal-runtime";
 import { requireSection } from "@/lib/portal-guard";
 import { PageHeader, Empty } from "@/components/ui";
 import { CreativeCard } from "./creative-card";
@@ -8,8 +8,8 @@ export const metadata = { title: "Creative approval" };
 
 export default async function CreativeApproval() {
   const me = await requireClient();
-  requireSection(me.clientId, "creative");
-  const creatives = getCreatives(me.clientId);
+  await requireSection(me.clientId, "creative");
+  const creatives = await getCreatives(me);
   const waiting = creatives.filter((c) => c.status === "Client review");
   const rest = creatives.filter((c) => c.status !== "Client review");
 

@@ -1,8 +1,8 @@
 import "server-only";
 import { db } from "./data/store";
 
-// Agency-side reads. Only import from routes guarded by requireAdmin().
-
+// Demo-only compatibility exports. Production pages should use the async
+// Supabase-backed repositories directly; never use these in deployed flows.
 export function agencyOverview() {
   const active = db.clients.filter((c) => c.status === "Active");
   const mrr = active.reduce((a, c) => a + c.monthlyFee, 0);
@@ -24,5 +24,4 @@ export function agencyOverview() {
 }
 
 export const clientName = (id: string) => db.clients.find((c) => c.id === id)?.name ?? id;
-
 export { db };

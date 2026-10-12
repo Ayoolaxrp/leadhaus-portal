@@ -3,7 +3,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { CheckCircle, Circle } from "@phosphor-icons/react/dist/ssr";
 import { requireAdmin } from "@/lib/session";
-import { db } from "@/lib/admin";
+import { getAdminData } from "@/lib/admin-runtime";
 import {
   updateClientPortal, updateProject, updateCampaignStatus, updateGoals, toggleOnboardingItem, addOnboardingItem,
   startOnboarding, setOnboardingStage, sendOnboardingReminder, applyChecklistTemplate, setClientStatus,
@@ -40,6 +40,7 @@ const add = "cursor-pointer list-none px-4 py-2.5 text-sm font-medium text-accen
 
 export default async function ManageClient({ params, searchParams }: PageProps<"/admin/clients/[id]">) {
   await requireAdmin();
+  const db = await getAdminData();
   const { id } = await params;
   const sp = await searchParams;
   const c = db.clients.find((x) => x.id === id);
@@ -118,7 +119,7 @@ export default async function ManageClient({ params, searchParams }: PageProps<"
         </div>
       )}
 
-      {tab === "onboarding" && <OnboardingTab clientId={c.id} who={who} hidden={hidden("onboarding")} />}
+      {tab === "onboarding" &&          <OnboardingTab clientId={c.id} who={who} hidden={hidden("onboarding")} db={db} />}
 
       {tab === "projects" && (
         <>
@@ -252,9 +253,9 @@ export default async function ManageClient({ params, searchParams }: PageProps<"
         </>
       )}
 
-      {tab === "reports" && <ReportsTab clientId={c.id} hidden={hidden("reports")} />}
+      {tab === "reports" && <ReportsTab clientId={c.id} hidden={hidden("reports")} db={db} />}
 
-      {tab === "strategy" && <StrategyTab clientId={c.id} hidden={hidden("strategy")} />}
+      {tab === "strategy" && <StrategyTab clientId={c.id} hidden={hidden("strategy")} db={db} />}
 
       {tab === "documents" && (
         <>
@@ -289,7 +290,7 @@ export default async function ManageClient({ params, searchParams }: PageProps<"
   );
 }
 
-function OnboardingTab({ clientId, who, hidden }: { clientId: string; who: string; hidden: React.ReactNode }) {
+function OnboardingTab({ clientId, who, hidden, db }: { clientId: string; who: string; hidden: React.ReactNode; db: Awaited<ReturnType<typeof getAdminData>> }) {
   const c = db.clients.find((x) => x.id === clientId)!;
   const items = db.onboarding.filter((o) => o.clientId === clientId);
   const open = items.filter((o) => !o.done).length;
@@ -363,7 +364,7 @@ function OnboardingTab({ clientId, who, hidden }: { clientId: string; who: strin
   );
 }
 
-function ReportsTab({ clientId, hidden }: { clientId: string; hidden: React.ReactNode }) {
+function ReportsTab({ clientId, hidden, db }: { clientId: string; hidden: React.ReactNode; db: Awaited<ReturnType<typeof getAdminData>> }) {
   const reports = db.reports.filter((r) => r.clientId === clientId).sort((a, b) => b.periodEnd.localeCompare(a.periodEnd));
   const weeks = db.metrics.filter((m) => m.clientId === clientId).slice(-4);
   return (
@@ -418,7 +419,7 @@ function ReportsTab({ clientId, hidden }: { clientId: string; hidden: React.Reac
   );
 }
 
-function StrategyTab({ clientId, hidden }: { clientId: string; hidden: React.ReactNode }) {
+function StrategyTab({ clientId, hidden, db }: { clientId: string; hidden: React.ReactNode; db: Awaited<ReturnType<typeof getAdminData>> }) {
   const s = db.strategies.find((x) => x.clientId === clientId);
   return (
     <>

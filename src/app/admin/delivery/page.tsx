@@ -1,5 +1,5 @@
 import { requireAdmin } from "@/lib/session";
-import { clientName, db } from "@/lib/admin";
+import { adminClientName, getAdminData } from "@/lib/admin-runtime";
 import { shareCreative, publishReport, addTask, completeTask } from "@/lib/actions";
 import { ActionForm } from "@/components/action-form";
 import { PageHeader, Card, SectionTitle, Status, Progress, Badge, btn, field } from "@/components/ui";
@@ -9,6 +9,8 @@ export const metadata = { title: "Delivery" };
 
 export default async function Delivery() {
   await requireAdmin();
+  const db = await getAdminData();
+  const clientName = (id: string) => db.clients.find((client) => client.id === id)?.name ?? id;
   return (
     <>
       <PageHeader title="Delivery" sub="Projects, tasks, creative approvals and reports across every client."

@@ -1,13 +1,16 @@
 import { expect, type Page } from "@playwright/test";
+import { E2E_PASSCODE } from "./passcode";
 
 export async function resetDemo(page: Page) {
   await page.goto("/login");
+  await page.locator("#reset-code").fill(E2E_PASSCODE);
   await page.getByRole("button", { name: "Reset demo" }).click();
   await expect(page.getByText("Demo data has been reset")).toBeVisible();
 }
 
 export async function signInAs(page: Page, name: string) {
   await page.goto("/login");
+  await page.locator("#passcode").fill(E2E_PASSCODE);
   await page.getByRole("button", { name: new RegExp(name) }).click();
   await page.waitForURL(/\/(portal|admin)/);
 }

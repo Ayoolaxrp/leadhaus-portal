@@ -1,5 +1,5 @@
 import { requireAdmin } from "@/lib/session";
-import { agencyOverview, clientName, db } from "@/lib/admin";
+import { adminOverview, getAdminData } from "@/lib/admin-runtime";
 import { markInvoicePaid, createInvoice } from "@/lib/actions";
 import { ActionForm } from "@/components/action-form";
 import { PageHeader, Card, SectionTitle, Stat, Status, Badge, btn, field } from "@/components/ui";
@@ -9,7 +9,8 @@ export const metadata = { title: "Finance" };
 
 export default async function Finance() {
   await requireAdmin();
-  const o = agencyOverview();
+  const [o, db] = await Promise.all([adminOverview(), getAdminData()]);
+  const clientName = (id: string) => db.clients.find((client) => client.id === id)?.name ?? id;
   return (
     <>
       <PageHeader title="Finance" sub="Invoices, collaborator payments and margin. Internal only."

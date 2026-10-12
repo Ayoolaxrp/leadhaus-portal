@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireClient } from "@/lib/session";
-import { getInvoice, getAccount, getAgencyInfo } from "@/lib/portal";
+import { getInvoice, getAccount, getAgencyInfo } from "@/lib/portal-runtime";
 import { requireSection } from "@/lib/portal-guard";
 import { markInvoiceSent } from "@/lib/actions";
 import { Card, Status, Badge, btn } from "@/components/ui";
@@ -15,11 +15,11 @@ const long = { day: "numeric", month: "long", year: "numeric" } as const;
 
 export default async function InvoicePage({ params }: PageProps<"/portal/billing/[id]">) {
   const me = await requireClient();
-  requireSection(me.clientId, "billing");
-  const inv = getInvoice(me.clientId, (await params).id);
+  await requireSection(me.clientId, "billing");
+  const id = (await params).id;
+  const [inv, account, agency] = await Promise.all([getInvoice(me, id), getAccount(me), getAgencyInfo()]);
   if (!inv) notFound();
-  const account = getAccount(me.clientId);
-  const BANK_DETAILS = getAgencyInfo().bank;
+  const BANK_DETAILS = agency.bank;
   return (
     <>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
@@ -28,7 +28,7 @@ export default async function InvoicePage({ params }: PageProps<"/portal/billing
       </div>
       <Card className="mx-auto max-w-3xl p-8 md:p-12">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-xs font-semibold tracking-[0.08em] uppercase">{getAgencyInfo().agencyName}</p>
+          <p className="text-xs font-semibold tracking-[0.08em] uppercase">{agency.agencyName}</p>
           {inv.clientMarkedPaidAt && inv.status !== "Paid" ? <Badge tone="accent">Payment sent</Badge> : <Status value={inv.status} />}
         </div>
         <h1 className="mt-8 text-2xl font-semibold tracking-tight">Invoice {inv.number}</h1>

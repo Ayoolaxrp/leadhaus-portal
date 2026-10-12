@@ -47,8 +47,10 @@ language sql stable security definer set search_path = '' as $$
   select client_id from public.profiles where id = auth.uid() and role = 'client';
 $$;
 
-revoke execute on function public.is_staff() from anon;
-revoke execute on function public.my_client_id() from anon;
+revoke all on function public.is_staff() from public, anon;
+revoke all on function public.my_client_id() from public, anon;
+grant execute on function public.is_staff() to authenticated;
+grant execute on function public.my_client_id() to authenticated;
 
 -- ---------- client-visible tables ----------
 create table if not exists public.campaigns (
@@ -56,7 +58,8 @@ create table if not exists public.campaigns (
   client_id uuid not null references public.clients(id) on delete cascade,
   name text not null, platform text, objective text,
   status text not null check (status in ('Planning','Awaiting Approval','Live','Optimising','Paused','Completed')),
-  start_date date, end_date date, monthly_budget numeric(12,2)
+  start_date date, end_date date, monthly_budget numeric(12,2),
+  unique (id, client_id)
 );
 
 create table if not exists public.weekly_metrics (
@@ -72,15 +75,17 @@ create table if not exists public.projects (
   id uuid primary key default gen_random_uuid(),
   client_id uuid not null references public.clients(id) on delete cascade,
   name text not null, type text, start_date date, end_date date,
-  progress int not null default 0 check (progress between 0 and 100)
+  progress int not null default 0 check (progress between 0 and 100),
+  unique (id, client_id)
 );
 
 create table if not exists public.deliverables (
   id uuid primary key default gen_random_uuid(),
   client_id uuid not null references public.clients(id) on delete cascade,
-  project_id uuid not null references public.projects(id) on delete cascade,
+  project_id uuid not null,
   title text not null, due date,
-  status text not null check (status in ('Planned','In progress','Client review','Delivered'))
+  status text not null check (status in ('Planned','In progress','Client review','Delivered')),
+  foreign key (project_id, client_id) references public.projects(id, client_id) on delete cascade
 );
 
 create table if not exists public.creatives (
@@ -89,26 +94,31 @@ create table if not exists public.creatives (
   title text not null, format text, platform text,
   status text not null default 'Internal review' check (status in ('Internal review','Client review','Revision requested','Approved')),
   decided_by uuid references public.profiles(id),
-  decided_at timestamptz
+  decided_at timestamptz,
+  review_requested_at timestamptz,
+  unique (id, client_id)
 );
 
 create table if not exists public.creative_versions (
   id uuid primary key default gen_random_uuid(),
   client_id uuid not null references public.clients(id) on delete cascade,
-  creative_id uuid not null references public.creatives(id) on delete cascade,
+  creative_id uuid not null,
   version int not null,
   storage_path text not null, -- clients/<client_id>/creatives/...
   created_at timestamptz not null default now(),
-  unique (creative_id, version)
+  unique (creative_id, version),
+  foreign key (creative_id, client_id) references public.creatives(id, client_id) on delete cascade
 );
 
 create table if not exists public.creative_comments (
   id uuid primary key default gen_random_uuid(),
   client_id uuid not null references public.clients(id) on delete cascade,
-  creative_id uuid not null references public.creatives(id) on delete cascade,
+  creative_id uuid not null,
   author_id uuid not null references public.profiles(id),
   body text not null check (length(body) between 1 and 2000),
-  created_at timestamptz not null default now()
+  client_visible boolean not null default false,
+  created_at timestamptz not null default now(),
+  foreign key (creative_id, client_id) references public.creatives(id, client_id) on delete cascade
 );
 
 create table if not exists public.strategies (
@@ -246,10 +256,16 @@ create policy client_read on public.creatives for select to authenticated
 
 drop policy if exists client_read on public.creative_versions;
 create policy client_read on public.creative_versions for select to authenticated
-  using (client_id = (select public.my_client_id()) and exists (select 1 from public.creatives c where c.id = creative_id and c.status <> 'Internal review'));
+  using (client_id = (select public.my_client_id()) and exists (
+    select 1 from public.creatives c
+    where c.id = creative_versions.creative_id
+      and c.client_id = creative_versions.client_id
+      and c.status <> 'Internal review'
+  ));
 
 drop policy if exists client_read on public.creative_comments;
-create policy client_read on public.creative_comments for select to authenticated using (client_id = (select public.my_client_id()));
+create policy client_read on public.creative_comments for select to authenticated
+  using (client_id = (select public.my_client_id()) and client_visible);
 
 drop policy if exists client_read on public.reports;
 create policy client_read on public.reports for select to authenticated using (client_id = (select public.my_client_id()) and status = 'Published');
@@ -268,7 +284,17 @@ create policy client_read on public.tasks for select to authenticated using (cli
 -- server re-checks client_id, so clients cannot set arbitrary statuses.
 drop policy if exists client_comment on public.creative_comments;
 create policy client_comment on public.creative_comments for insert to authenticated
-  with check (client_id = (select public.my_client_id()) and author_id = (select auth.uid()));
+  with check (
+    client_id = (select public.my_client_id())
+    and author_id = (select auth.uid())
+    and client_visible
+    and exists (
+      select 1 from public.creatives c
+      where c.id = creative_comments.creative_id
+        and c.client_id = creative_comments.client_id
+        and c.status <> 'Internal review'
+    )
+  );
 
 drop policy if exists client_question on public.messages;
 create policy client_question on public.messages for insert to authenticated

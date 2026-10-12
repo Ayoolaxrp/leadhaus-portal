@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { FileText } from "@phosphor-icons/react/dist/ssr";
 import { requireClient } from "@/lib/session";
-import { getDocuments } from "@/lib/portal";
+import { getDocuments } from "@/lib/portal-runtime";
 import { requireSection } from "@/lib/portal-guard";
 import { PageHeader, Card, Badge, Empty } from "@/components/ui";
 import { date } from "@/lib/format";
@@ -12,8 +12,8 @@ const order = ["Contract", "Proposal", "Invoice", "Report", "Brand", "Other"] as
 
 export default async function Documents() {
   const me = await requireClient();
-  requireSection(me.clientId, "documents");
-  const docs = getDocuments(me.clientId);
+  await requireSection(me.clientId, "documents");
+  const docs = await getDocuments(me);
 
   return (
     <>

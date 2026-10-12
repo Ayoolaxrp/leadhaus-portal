@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { signInAs, openPage, signOut } from "./helpers";
+import { signInAs, openPage, signOut, resetDemo } from "./helpers";
 
 // Team journey: runs after 1-client.spec.ts (files run in name order), so Ada's
 // question, change request and payment notice are waiting for the team.
@@ -139,9 +139,7 @@ test("Zainab only sees Fika Foods", async ({ page }) => {
 });
 
 test("reset demo puts everything back", async ({ page }) => {
-  await page.goto("/login");
-  await page.getByRole("button", { name: "Reset demo" }).click();
-  await expect(page.getByText("Demo data has been reset")).toBeVisible();
+  await resetDemo(page);
   await signInAs(page, "Ada Nwosu");
   await expect(page.getByText(/3 jobs waiting for you/)).toBeVisible();
 });

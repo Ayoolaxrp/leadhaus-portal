@@ -1,5 +1,5 @@
 import { requireClient } from "@/lib/session";
-import { getReports, getPerformance } from "@/lib/portal";
+import { getReports, getPerformance } from "@/lib/portal-runtime";
 import { requireSection } from "@/lib/portal-guard";
 import { PageHeader, Card, SectionTitle, Badge, Empty } from "@/components/ui";
 import { WeeklyBars } from "@/components/chart";
@@ -10,9 +10,8 @@ export const metadata = { title: "Reports" };
 
 export default async function Reports() {
   const me = await requireClient();
-  requireSection(me.clientId, "reports");
-  const reports = getReports(me.clientId);
-  const perf = getPerformance(me.clientId);
+  await requireSection(me.clientId, "reports");
+  const [reports, perf] = await Promise.all([getReports(me), getPerformance(me)]);
   const [latest, ...older] = reports;
 
   return (

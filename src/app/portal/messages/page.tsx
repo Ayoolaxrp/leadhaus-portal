@@ -1,6 +1,6 @@
 import { Megaphone } from "@phosphor-icons/react/dist/ssr";
 import { requireClient } from "@/lib/session";
-import { getMessages, getAccount, getAgencyInfo } from "@/lib/portal";
+import { getMessages, getAccount, getAgencyInfo } from "@/lib/portal-runtime";
 import { requireSection } from "@/lib/portal-guard";
 import { sendClientMessage } from "@/lib/actions";
 import { PageHeader, Card, btn, field } from "@/components/ui";
@@ -12,10 +12,8 @@ export const metadata = { title: "Messages" };
 
 export default async function Messages() {
   const me = await requireClient();
-  requireSection(me.clientId, "messages");
-  const all = getMessages(me.clientId);
-  const account = getAccount(me.clientId);
-  const agency = getAgencyInfo();
+  await requireSection(me.clientId, "messages");
+  const [all, account, agency] = await Promise.all([getMessages(me), getAccount(me), getAgencyInfo()]);
   const announcements = all.filter((m) => m.kind === "Announcement");
   const thread = all.filter((m) => m.kind !== "Announcement");
 

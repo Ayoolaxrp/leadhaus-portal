@@ -1,5 +1,5 @@
 import { requireAdmin } from "@/lib/session";
-import { db } from "@/lib/admin";
+import { getAdminData } from "@/lib/admin-runtime";
 import { advanceLead, markLeadLost, addLead } from "@/lib/actions";
 import { ActionForm } from "@/components/action-form";
 import { PageHeader, Card, Status, Badge, btn, field } from "@/components/ui";
@@ -11,6 +11,7 @@ const stages = ["New Lead", "Contacted", "Qualified", "Call Booked", "Proposal S
 
 export default async function Leads({ searchParams }: PageProps<"/admin/leads">) {
   await requireAdmin();
+  const db = await getAdminData();
   const q = String((await searchParams).q ?? "").toLowerCase();
   const team = db.users.filter((u) => u.role === "admin");
   const leads = db.leads.filter((l) => !q || `${l.company} ${l.contact} ${l.source} ${l.owner}`.toLowerCase().includes(q));

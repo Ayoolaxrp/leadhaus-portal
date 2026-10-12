@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireClient } from "@/lib/session";
-import { getDocument, getAccount } from "@/lib/portal";
+import { getDocument, getAccount } from "@/lib/portal-runtime";
 import { requireSection } from "@/lib/portal-guard";
 import { Card, Badge } from "@/components/ui";
 import { PrintButton } from "@/components/print-button";
@@ -11,10 +11,10 @@ export const metadata = { title: "Document" };
 
 export default async function DocumentPage({ params }: PageProps<"/portal/documents/[id]">) {
   const me = await requireClient();
-  requireSection(me.clientId, "documents");
-  const doc = getDocument(me.clientId, (await params).id);
+  await requireSection(me.clientId, "documents");
+  const id = (await params).id;
+  const [doc, account] = await Promise.all([getDocument(me, id), getAccount(me)]);
   if (!doc) notFound();
-  const account = getAccount(me.clientId);
   return (
     <>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">

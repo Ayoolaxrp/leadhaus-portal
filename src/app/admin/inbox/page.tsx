@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/session";
-import { db } from "@/lib/admin";
+import { getAdminData } from "@/lib/admin-runtime";
 import { postClientMessage, markQuestionsAnswered } from "@/lib/actions";
 import { PageHeader, Card, Empty, btn, field } from "@/components/ui";
 import { ActionForm } from "@/components/action-form";
@@ -8,10 +8,10 @@ import { ChatThread } from "@/components/chat-thread";
 
 export const metadata = { title: "Inbox" };
 
-const waiting = (clientId: string) => db.messages.filter((m) => m.clientId === clientId && m.kind === "Question" && m.fromRole === "client" && !m.answered).length;
-
 export default async function Inbox({ searchParams }: PageProps<"/admin/inbox">) {
   await requireAdmin();
+  const db = await getAdminData();
+  const waiting = (clientId: string) => db.messages.filter((m) => m.clientId === clientId && m.kind === "Question" && m.fromRole === "client" && !m.answered).length;
   const sp = await searchParams;
   const selected = db.clients.find((c) => c.id === sp.c) ?? [...db.clients].sort((a, b) => waiting(b.id) - waiting(a.id))[0];
   const contact = db.users.find((u) => u.clientId === selected?.id);
