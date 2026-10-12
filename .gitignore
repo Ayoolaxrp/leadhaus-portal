@@ -47,3 +47,6 @@ next-env.d.ts
 
 # Supabase CLI cache
 supabase/.temp
+
+# Machine-specific skill symlinks (recreate with: npx skills experimental_install)
+.claude/skills
