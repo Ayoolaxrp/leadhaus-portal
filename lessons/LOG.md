@@ -21,3 +21,9 @@
 - Production forced live mode, so the e2e suite (which runs `next start`) lost the demo picker. `AUTH_PROVIDER=demo` overrides it for tests only.
 - Throwing on missing env before `cookies()` made Next try to prerender `/admin` and fail the build. Read cookies first.
 - Invited users have no password: the sign-in form defaults to the email link.
+
+## 2026-10-12 Supabase project live
+- The Supabase MCP OAuth grant is tied to one organization; a second org needs a project-scoped personal access token in the `Authorization` header (`.mcp.json` reads `SUPABASE_LEADHAUS_TOKEN`).
+- The Management API migrations endpoint versions by the second: two migrations sent in the same second collide on `schema_migrations_pkey`. Pause between them.
+- `NEXT_PUBLIC_*` values are inlined at build time: rebuild after adding Supabase keys, or the sign-in form has no URL.
+- Live smoke test (15 checks: staff/client sign-in, provisioning RPC, website lead, RLS denials, sign-up blocked) passed against the real project, then all test rows were deleted.

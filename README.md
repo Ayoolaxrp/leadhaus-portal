@@ -62,9 +62,8 @@ Requirements: Node 20.9 or newer. Environment variables are listed in `.env.exam
 
 Production builds run in live mode: Supabase Auth sign-in, data in Supabase, no demo accounts. The website links to the portal from "Client Login" at `https://portal.leadhausstudios.com/login`.
 
-1. **Supabase project.** Create a new project for Leadhaus (not shared with any other client). Link and push the schema:
-   `npx supabase link --project-ref <ref>` then `npx supabase db push` (applies `supabase/migrations/0001` to `0003`, empty workspace, no sample data).
-2. **Auth settings** (Supabase dashboard > Authentication > URL configuration): Site URL `https://portal.leadhausstudios.com`, add `https://portal.leadhausstudios.com/auth/callback` to redirect URLs. Set up custom SMTP so invite emails come from a Leadhaus address.
+1. **Supabase project:** done 2026-10-12. Project `ecxxyfdpdvbqgvbaxknt` ("leadhaus", eu-west-2) has migrations 0001 to 0003 applied (empty workspace, no sample data). Public sign-up is off (invite only).
+2. **Auth settings:** site URL `https://portal.leadhausstudios.com`; redirect allow list has the portal domain and `http://localhost:3000`. Still to do: custom SMTP (Authentication > Emails > SMTP). Supabase's built-in email only reaches members of the Supabase team and is heavily rate limited, so client invites will not arrive without it.
 3. **Host** on Vercel (or any Node host). Env vars from `.env.example`: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_MAIN_SITE_URL`.
 4. **Domain.** Add `portal.leadhausstudios.com` to the host, then a CNAME at the domain's DNS provider.
 5. **Team accounts.** For each staff member:
