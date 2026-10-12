@@ -71,7 +71,7 @@ Production builds run in live mode: Supabase Auth sign-in, data in Supabase, no 
    `node --env-file=.env.local scripts/add-staff.mjs dare@leadhausstudios.com "Dare" "Founder"`
    They get an invite email and land in `/admin`.
 6. **Clients.** Staff add clients in Admin > Clients. That sends the client an invite and creates their portal.
-7. Merge the "Client Login" pull request on the website repo.
+7. Merge the website pull request (Datdarey/leadhaus-updated-site#1). It adds "Client Login" and makes the ads funnel, creator funnel and contact form send a copy of each enquiry to `/api/leads`, which shows up in Admin > Leads. Formspree and the Google Sheet keep working as before.
 
 Not built yet: file contents for creatives, documents and client uploads (only the file details are saved; Supabase Storage with 10-minute signed URLs is next), email notifications for workflow events, Paystack, Meta/Google Ads sync.
 
